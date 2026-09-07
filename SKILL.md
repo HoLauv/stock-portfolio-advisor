@@ -18,9 +18,21 @@ tags:
   - 复盘
 license: MIT
 
-# ===== 本地兼容字段（保留）=====
+# ===== 本地兼容字段 + ClawHub 分类/标签（保留）=====
 metadata:
   version: 2.1.0
+  categories: ["finance"]
+  tags:
+    - stock
+    - a-share
+    - china-stocks
+    - portfolio
+    - valuation
+    - fundamental-analysis
+    - quant
+    - investing
+    - asset-allocation
+    - stock-scoring
   display_name: 自选持仓投资价值评分
   display_name_en: Stock Portfolio Investment Scoring
   description_zh: 连接腾讯自选股，输出可追溯价值评分、分行业情景估值与组合配置参考
