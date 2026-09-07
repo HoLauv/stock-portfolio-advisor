@@ -1,0 +1,1074 @@
+{
+  "model_version": "2.1.0",
+  "date": "2026-09-05",
+  "weight_warnings": [],
+  "synthetic": true,
+  "stocks": [
+    {
+      "code": "ordinary",
+      "name": "合成样本 ordinary",
+      "industry": "合成行业",
+      "holding": true,
+      "current_weight": 5,
+      "cost_price": null,
+      "market_value": null,
+      "pnl_pct": null,
+      "exposure_group": "合成产业链",
+      "tradability": "normal",
+      "profile": "default",
+      "price": 15,
+      "dims": {
+        "Q": 96.4,
+        "G": 81.9,
+        "V": 82.0,
+        "F": 79.2,
+        "T": 87.4,
+        "N": 74.0
+      },
+      "weights": {
+        "Q": 38.461538,
+        "G": 30.769231,
+        "V": 30.769231,
+        "F": 15,
+        "T": 10,
+        "N": 10
+      },
+      "weights_version": "builtin-v2.1",
+      "total": 87.5,
+      "trading_score": 80.1,
+      "grade": "A+",
+      "action": "价值评分很高",
+      "position_cap": 15,
+      "risk_checked": true,
+      "red_flags": [],
+      "data_quality": {
+        "Q": {
+          "score": 96.4,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "G": {
+          "score": 81.9,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "V": {
+          "score": 82.0,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "F": {
+          "score": 79.2,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "T": {
+          "score": 87.4,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "N": {
+          "score": 74.0,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        }
+      },
+      "rating_blockers": [],
+      "notes": [],
+      "valuation": {
+        "status": "available",
+        "method": "normalized_pe",
+        "valuation_as_of": "2026-09-05",
+        "horizon": "current_fair_value",
+        "fair_value_bear": 15.0,
+        "fair_value_base": 20,
+        "fair_value_bull": 25.0,
+        "assumptions": {
+          "normalization": "合成样本，非真实预测",
+          "cycle_normalization": "合成完整周期"
+        },
+        "sources": [
+          "synthetic financial statements"
+        ],
+        "scenario_inputs": {
+          "bear": {
+            "eps_normalized": 1.5,
+            "fair_pe": 10
+          },
+          "base": {
+            "eps_normalized": 2,
+            "fair_pe": 10
+          },
+          "bull": {
+            "eps_normalized": 2.5,
+            "fair_pe": 10
+          }
+        },
+        "confidence": "scenario_based",
+        "confidence_reason": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+        "excluded_methods": [
+          "consensus_target",
+          "tech_resistance"
+        ]
+      },
+      "target_price": 20,
+      "target_methods": {
+        "normalized_pe": 20
+      },
+      "target_note": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+      "reference_prices": {
+        "technical_resistance": 100,
+        "consensus_target": null
+      },
+      "margin_of_safety_pct": 25.0,
+      "upside_pct": 33.3,
+      "stop_loss": 11.64,
+      "stop_methods": {
+        "技术支撑参考": 11.64
+      },
+      "key_points": [],
+      "risks": [],
+      "sources": {
+        "indicator_meta": {
+          "roe_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "gross_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "debt_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_profit_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "operating_cashflow_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "prior_net_profit": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_cv_3y": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "positive_mean": true,
+            "annual_samples": 3
+          },
+          "rev_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "qoq_trend": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "forecast": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "industry_boom": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "pe_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "pb_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "ps_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "rel_industry_discount": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "multiple": "PE"
+          },
+          "main_inflow_20d_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "inflow_5d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "institution_change_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "volume_signal": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "holders_change": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma_alignment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rs_60d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "macd": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "drawdown_from_250d_high": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "annual_vol": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rating_buy_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "news_sentiment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "major_announcement": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "research_visits_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "tech_resistance": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma60": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "low_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cycle_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "loss_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "roe_normalized": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "risk_coverage_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_capital_to_netasset": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "provision_coverage": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "npl_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cet1_buffer_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "core_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "comprehensive_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "normalized_profit_growth_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          }
+        },
+        "price_meta": {
+          "source": "synthetic fixture / not real market data",
+          "as_of": "2026-09-05",
+          "published_at": "2026-08-25",
+          "period_end": "2026-06-30"
+        },
+        "risk": {
+          "status": "checked",
+          "events": [],
+          "source": "synthetic risk check",
+          "as_of": "2026-09-05"
+        }
+      }
+    },
+    {
+      "code": "bank",
+      "name": "合成样本 bank",
+      "industry": "合成行业",
+      "holding": true,
+      "current_weight": 5,
+      "cost_price": null,
+      "market_value": null,
+      "pnl_pct": null,
+      "exposure_group": "合成产业链",
+      "tradability": "normal",
+      "profile": "bank",
+      "price": 15,
+      "dims": {
+        "Q": 93.8,
+        "G": 81.9,
+        "V": 45.2,
+        "F": 79.2,
+        "T": 87.4,
+        "N": 74.0
+      },
+      "weights": {
+        "Q": 46.153846,
+        "G": 15.384615,
+        "V": 38.461539,
+        "F": 15,
+        "T": 10,
+        "N": 10
+      },
+      "weights_version": "builtin-v2.1",
+      "total": 73.3,
+      "trading_score": 80.1,
+      "grade": "A",
+      "action": "价值评分较高",
+      "position_cap": 12,
+      "risk_checked": true,
+      "red_flags": [],
+      "data_quality": {
+        "Q": {
+          "score": 93.8,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "G": {
+          "score": 81.9,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "V": {
+          "score": 45.2,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "F": {
+          "score": 79.2,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "T": {
+          "score": 87.4,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        },
+        "N": {
+          "score": 74.0,
+          "coverage": 100.0,
+          "missing": [],
+          "not_applicable": []
+        }
+      },
+      "rating_blockers": [],
+      "notes": [],
+      "valuation": {
+        "status": "available",
+        "method": "justified_pb",
+        "valuation_as_of": "2026-09-05",
+        "horizon": "current_fair_value",
+        "fair_value_bear": 10.0,
+        "fair_value_base": 12.5,
+        "fair_value_bull": 15.0,
+        "assumptions": {
+          "normalization": "合成样本，非真实预测",
+          "cycle_normalization": "合成完整周期"
+        },
+        "sources": [
+          "synthetic financial statements"
+        ],
+        "scenario_inputs": {
+          "bear": {
+            "bps": 10,
+            "sustainable_roe_pct": 10,
+            "cost_of_equity_pct": 10,
+            "terminal_growth_pct": 2
+          },
+          "base": {
+            "bps": 10,
+            "sustainable_roe_pct": 12,
+            "cost_of_equity_pct": 10,
+            "terminal_growth_pct": 2
+          },
+          "bull": {
+            "bps": 10,
+            "sustainable_roe_pct": 14,
+            "cost_of_equity_pct": 10,
+            "terminal_growth_pct": 2
+          }
+        },
+        "confidence": "scenario_based",
+        "confidence_reason": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+        "excluded_methods": [
+          "consensus_target",
+          "tech_resistance"
+        ]
+      },
+      "target_price": 12.5,
+      "target_methods": {
+        "justified_pb": 12.5
+      },
+      "target_note": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+      "reference_prices": {
+        "technical_resistance": 100,
+        "consensus_target": null
+      },
+      "margin_of_safety_pct": -20.0,
+      "upside_pct": -16.7,
+      "stop_loss": 11.64,
+      "stop_methods": {
+        "技术支撑参考": 11.64
+      },
+      "key_points": [],
+      "risks": [],
+      "sources": {
+        "indicator_meta": {
+          "roe_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "gross_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "debt_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_profit_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "operating_cashflow_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "prior_net_profit": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_cv_3y": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "positive_mean": true,
+            "annual_samples": 3
+          },
+          "rev_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "qoq_trend": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "forecast": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "industry_boom": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "pe_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "pb_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "ps_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "rel_industry_discount": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "multiple": "PB"
+          },
+          "main_inflow_20d_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "inflow_5d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "institution_change_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "volume_signal": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "holders_change": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma_alignment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rs_60d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "macd": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "drawdown_from_250d_high": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "annual_vol": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rating_buy_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "news_sentiment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "major_announcement": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "research_visits_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "tech_resistance": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma60": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "low_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cycle_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "loss_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "roe_normalized": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "risk_coverage_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_capital_to_netasset": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "provision_coverage": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "npl_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cet1_buffer_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "core_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "comprehensive_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "normalized_profit_growth_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          }
+        },
+        "price_meta": {
+          "source": "synthetic fixture / not real market data",
+          "as_of": "2026-09-05",
+          "published_at": "2026-08-25",
+          "period_end": "2026-06-30"
+        },
+        "risk": {
+          "status": "checked",
+          "events": [],
+          "source": "synthetic risk check",
+          "as_of": "2026-09-05"
+        }
+      }
+    },
+    {
+      "code": "missing",
+      "name": "缺失数据样本",
+      "industry": null,
+      "holding": null,
+      "current_weight": null,
+      "cost_price": null,
+      "market_value": null,
+      "pnl_pct": null,
+      "exposure_group": null,
+      "tradability": null,
+      "profile": "default",
+      "price": null,
+      "dims": {
+        "Q": null,
+        "G": null,
+        "V": null,
+        "F": null,
+        "T": null,
+        "N": null
+      },
+      "weights": {
+        "Q": 38.461538,
+        "G": 30.769231,
+        "V": 30.769231,
+        "F": 15,
+        "T": 10,
+        "N": 10
+      },
+      "weights_version": "builtin-v2.1",
+      "total": null,
+      "trading_score": null,
+      "grade": "NR",
+      "action": "暂不评级",
+      "position_cap": null,
+      "risk_checked": false,
+      "red_flags": [],
+      "data_quality": {
+        "Q": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "roe_ttm",
+            "gross_margin",
+            "net_margin",
+            "debt_ratio",
+            "ocf_to_np",
+            "np_cv_3y"
+          ],
+          "not_applicable": []
+        },
+        "G": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "rev_yoy",
+            "np_yoy",
+            "qoq_trend",
+            "forecast",
+            "industry_boom"
+          ],
+          "not_applicable": []
+        },
+        "V": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "margin_of_safety_pct",
+            "pe_pct",
+            "rel_industry_discount"
+          ],
+          "not_applicable": []
+        },
+        "F": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "main_inflow_20d_pct",
+            "inflow_5d",
+            "institution_change_pct",
+            "volume_signal",
+            "holders_change"
+          ],
+          "not_applicable": []
+        },
+        "T": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "ma_alignment",
+            "rs_60d",
+            "macd",
+            "drawdown_from_250d_high",
+            "annual_vol"
+          ],
+          "not_applicable": []
+        },
+        "N": {
+          "score": null,
+          "coverage": 0.0,
+          "missing": [
+            "rating_buy_ratio",
+            "news_sentiment",
+            "major_announcement",
+            "risk_score",
+            "research_visits_3m"
+          ],
+          "not_applicable": []
+        }
+      },
+      "rating_blockers": [
+        "基本面质量覆盖率不足70%",
+        "成长性覆盖率不足70%",
+        "估值覆盖率不足70%",
+        "关键基本面数据缺失",
+        "风险核查未完成或已过期",
+        "有效现价或基本面情景估值缺失"
+      ],
+      "notes": [],
+      "valuation": {
+        "status": "unavailable",
+        "method": null,
+        "valuation_as_of": "2026-09-05",
+        "horizon": "current_fair_value",
+        "fair_value_bear": null,
+        "fair_value_base": null,
+        "fair_value_bull": null,
+        "assumptions": {},
+        "sources": [],
+        "scenario_inputs": {},
+        "confidence": "insufficient",
+        "confidence_reason": "缺少来源；方法不适用于当前行业，需选择适用基本面模型；只接受估值日公允价值；未来目标价不得混入；缺少经营、倍数及再投资/资本约束假设；缺少估值输入来源清单",
+        "excluded_methods": [
+          "consensus_target",
+          "tech_resistance"
+        ]
+      },
+      "target_price": null,
+      "target_methods": {},
+      "target_note": "缺少来源；方法不适用于当前行业，需选择适用基本面模型；只接受估值日公允价值；未来目标价不得混入；缺少经营、倍数及再投资/资本约束假设；缺少估值输入来源清单",
+      "reference_prices": {
+        "technical_resistance": null,
+        "consensus_target": null
+      },
+      "margin_of_safety_pct": null,
+      "upside_pct": null,
+      "stop_loss": null,
+      "stop_methods": {},
+      "key_points": [],
+      "risks": [],
+      "sources": {
+        "indicator_meta": {},
+        "price_meta": {},
+        "risk": {}
+      }
+    }
+  ],
+  "market": {
+    "temperature": 50.0,
+    "state": "中性",
+    "equity_range": null,
+    "cash_range": null,
+    "tone": "市场温度不自动决定仓位",
+    "comment": "",
+    "notes": []
+  },
+  "allocation": {
+    "status": "reference",
+    "equity_pct": 27.0,
+    "cash_pct": 58.0,
+    "targets": {
+      "ordinary": 15.0,
+      "bank": 12.0
+    },
+    "actions": [
+      {
+        "code": "ordinary",
+        "name": "合成样本 ordinary",
+        "current": 5,
+        "target": 15.0,
+        "delta": 10.0,
+        "action": "复核目标权重"
+      },
+      {
+        "code": "bank",
+        "name": "合成样本 bank",
+        "current": 5,
+        "target": 12.0,
+        "delta": 7.0,
+        "action": "复核目标权重"
+      }
+    ],
+    "warnings": [
+      "仅为约束预算参考，未生成买卖订单；交易费用、最小交易单位、实际可成交性需另行核实。",
+      "风险承受度、期限和回撤为政策记录；不推断个人最优预算，不保证回撤上限。",
+      "受评级/集中度上限约束，未用预算留作现金"
+    ],
+    "watch_only": [
+      {
+        "code": "missing",
+        "name": "缺失数据样本",
+        "total": null,
+        "grade": "NR"
+      }
+    ],
+    "requested_equity_pct": 70,
+    "other_assets_pct": 15
+  },
+  "disclaimer": "评分与条件估值仅为公开数据量化参考，不构成投资建议，不承诺收益；v2阈值尚未完成历史收益校准。"
+}

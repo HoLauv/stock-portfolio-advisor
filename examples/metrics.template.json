@@ -1,0 +1,109 @@
+{
+  "schema_version": "2.0.0",
+  "date": null,
+  "market": {},
+  "portfolio_policy": {
+    "risk_tolerance": null,
+    "horizon_years": null,
+    "max_drawdown_pct": null,
+    "total_assets": null,
+    "cash_need_pct": null,
+    "equity_budget_pct": null,
+    "other_assets_pct": null,
+    "holdings_complete": null,
+    "weight_basis": null
+  },
+  "stocks": [
+    {
+      "code": "example",
+      "name": "待填标的",
+      "industry": null,
+      "profile": null,
+      "holding": false,
+      "price": null,
+      "price_meta": {},
+      "current_weight": null,
+      "exposure_group": null,
+      "tradability": null,
+      "tradability_meta": {},
+      "indicators": {
+        "annual_vol": null,
+        "cet1_buffer_pct": null,
+        "comprehensive_solvency_ratio": null,
+        "core_solvency_ratio": null,
+        "cycle_recovery": null,
+        "debt_ratio": null,
+        "drawdown_from_250d_high": null,
+        "forecast": null,
+        "goodwill_to_netasset": null,
+        "gross_margin": null,
+        "holders_change": null,
+        "industry_boom": null,
+        "inflow_5d": null,
+        "institution_change_pct": null,
+        "loss_recovery": null,
+        "low_3m": null,
+        "ma60": null,
+        "ma_alignment": null,
+        "macd": null,
+        "main_inflow_20d_pct": null,
+        "major_announcement": null,
+        "major_shareholder_reduce_pct": null,
+        "net_capital_to_netasset": null,
+        "net_margin": null,
+        "net_profit_ttm": null,
+        "news_sentiment": null,
+        "normalized_profit_growth_pct": null,
+        "np_cv_3y": null,
+        "np_yoy": null,
+        "npl_ratio": null,
+        "operating_cashflow_ttm": null,
+        "pb_pct": null,
+        "pe_pct": null,
+        "prior_net_profit": null,
+        "provision_coverage": null,
+        "ps_pct": null,
+        "qoq_trend": null,
+        "rating_buy_ratio": null,
+        "rel_industry_discount": null,
+        "research_visits_3m": null,
+        "rev_yoy": null,
+        "risk_coverage_ratio": null,
+        "roe_normalized": null,
+        "roe_ttm": null,
+        "rs_60d": null,
+        "tech_resistance": null,
+        "volume_signal": null
+      },
+      "indicator_meta": {},
+      "risk": {
+        "status": "not_checked",
+        "events": null,
+        "source": null,
+        "as_of": null
+      },
+      "valuation": {
+        "method": "normalized_pe",
+        "source": null,
+        "sources": [],
+        "as_of": null,
+        "horizon": "current_fair_value",
+        "assumptions": {},
+        "scenarios": {
+          "bear": {
+            "eps_normalized": null,
+            "fair_pe": null
+          },
+          "base": {
+            "eps_normalized": null,
+            "fair_pe": null
+          },
+          "bull": {
+            "eps_normalized": null,
+            "fair_pe": null
+          }
+        }
+      }
+    }
+  ]
+}

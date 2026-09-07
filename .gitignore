@@ -1,0 +1,23 @@
+# 运行产物（不入库）
+workspace/
+dist/
+*.zip
+*.zip.sha256
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 本地台账（含个人持仓，绝不入库）
+portfolio_ledger/
+positions.json
+watchlist.json
