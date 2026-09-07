@@ -1,0 +1,10 @@
+# 统一换行符：仓库内一律 LF，检出时按平台转换
+* text=auto
+
+# 二进制文件不做任何转换
+*.png binary
+*.zip binary
+*.ico binary
+
+# 示例报告是生成产物，不参与 diff
+examples/report.example.html -diff linguist-generated=true
