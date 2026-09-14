@@ -134,6 +134,56 @@ class ModelTests(unittest.TestCase):
         self.assertLess(b['dims']['Q'],a['dims']['Q'])
         s['indicators'].pop('roe_ttm');self.assertEqual(first(s)['grade'],'NR')
 
+    def test_structural_missing_uses_expectation_score(self):
+        """无机构覆盖/无行业数据属结构性缺失，按期望分插补，不再当作0分。"""
+        s=stock();a=first(s)
+        self.assertEqual(a['dims']['G'],81.9);self.assertFalse(a['data_quality']['G']['imputed'])
+        for key in ('forecast','industry_boom'):
+            s['indicators'].pop(key)
+        b=first(s)
+        self.assertEqual(b['data_quality']['G']['imputed'],['forecast','industry_boom'])
+        self.assertFalse(b['data_quality']['G']['missing'])
+        self.assertEqual(b['dims']['G'],76.9)
+        self.assertLess(b['dims']['G'],a['dims']['G'])
+        self.assertGreater(b['dims']['G'],59.9)
+
+    def test_imputation_does_not_raise_coverage_or_bypass_nr(self):
+        s=stock()
+        for key in ('forecast','industry_boom'):
+            s['indicators'].pop(key)
+        b=first(s)
+        self.assertEqual(b['data_quality']['G']['coverage'],70.0)
+        self.assertEqual(b['data_quality']['G']['imputed_weight'],30)
+        self.assertIsNotNone(b['dims']['G'])
+        s['indicators'].pop('qoq_trend')
+        c=first(s)
+        self.assertLess(c['data_quality']['G']['coverage'],m.MIN_COVERAGE)
+        self.assertIsNone(c['dims']['G']);self.assertEqual(c['grade'],'NR')
+
+    def test_observable_missing_item_is_never_imputed(self):
+        """公司自身披露的观测项缺失仍贡献0，防止漏报坏数据反而加分。"""
+        for key in ('net_margin','debt_ratio','main_inflow_20d_pct','annual_vol'):
+            self.assertNotIn(key,m.IMPUTE)
+        s=stock();a=first(s);s['indicators'].pop('net_margin');b=first(s)
+        self.assertIn('net_margin',b['data_quality']['Q']['missing'])
+        self.assertFalse(b['data_quality']['Q']['imputed'])
+        self.assertLess(b['dims']['Q'],a['dims']['Q'])
+        s=stock();s['indicators']['debt_ratio']=85;worst=first(s)
+        s=stock();s['indicators'].pop('debt_ratio');absent=first(s)
+        self.assertEqual(worst['dims']['Q'],absent['dims']['Q'])
+        self.assertEqual(absent['data_quality']['Q']['imputed_weight'],0)
+        self.assertLess(absent['dims']['Q'],first(stock())['dims']['Q'])
+
+    def test_imputation_is_traced_in_notes_and_report(self):
+        css=Path(__file__).resolve().parent.parent.joinpath('assets/report.css').read_text(encoding='utf-8')
+        s=stock()
+        for key in ('forecast','industry_boom'):
+            s['indicators'].pop(key)
+        r=first(s)
+        self.assertTrue(any('期望分插补' in n for n in r['notes']))
+        html=build_report.render(m.evaluate(data([s])),css)
+        self.assertIn('按总体期望分插补',html)
+
     def test_stale_future_and_missing_sources(self):
         for edit in ({'as_of':'2025-01-01'},{'as_of':'2026-10-01'},{'source':''}):
             s=stock();s['price_meta'].update(edit)
@@ -177,6 +227,30 @@ class ModelTests(unittest.TestCase):
         s=stock();a=first(s)
         s['indicators'].update(ma_alignment='bear',news_sentiment='negative',main_inflow_20d_pct=-10)
         b=first(s);self.assertEqual(a['total'],b['total']);self.assertLess(b['trading_score'],a['trading_score'])
+
+    def test_allocation_ignores_code_order_within_group(self):
+        """分组额度是共享的：分配必须按评分比例，不能因为代码排序靠前就多吃额度。"""
+        def run(pairs):
+            stocks=[]
+            for code,roe in pairs:
+                s=stock(code);s['industry']='同一行业';s['exposure_group']='同一产业链'
+                s['indicators']['roe_ttm']=roe
+                stocks.append(s)
+            r=m.evaluate(data(stocks))
+            return ({s['code']:s['total'] for s in r['stocks']},r['allocation']['targets'])
+        weak,mid,strong=5,12,25
+        results=[]
+        for pairs in ([('aaa',weak),('mmm',mid),('zzz',strong)],
+                      [('zzz',weak),('aaa',mid),('mmm',strong)]):
+            totals,targets=run(pairs)
+            order=[c for c,_ in pairs]
+            self.assertLess(totals[order[0]],totals[order[2]])
+            self.assertLess(targets[order[0]],targets[order[1]])
+            self.assertLess(targets[order[1]],targets[order[2]])
+            self.assertGreater(targets[order[0]],0)
+            self.assertAlmostEqual(sum(targets.values()),30.0,places=1)
+            results.append(sorted(targets.values()))
+        self.assertEqual(results[0],results[1])
 
     def test_allocation_constraints_and_zero_grade_exits(self):
         stocks=[stock(str(i)) for i in range(12)]

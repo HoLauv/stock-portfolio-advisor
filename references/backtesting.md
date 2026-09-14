@@ -134,8 +134,8 @@ config/backtest_strategy.json的费用（买3bps、卖8bps、滑点5bps）只是
 ## 验证与打包
 
 ```powershell
-python -B -m unittest discover -s scripts -p "test_*.py"
-python scripts/package_skill.py --output dist/stock-portfolio-advisor-2.1.0.zip
+python -B -m unittest discover -s scripts -p "test_*.py"   # 54 tests
+python scripts/package_skill.py --output dist/stock-portfolio-advisor-2.2.0.zip
 ```
 
 ZIP采用白名单，只含程序、规则说明、当前Logo、默认配置和测试。排除workspace、用户持仓/历史行情、调权档案、旧图、缓存、临时文件以及旧ZIP。每个发行文件的SHA-256在包内MANIFEST.json中。

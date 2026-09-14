@@ -1,5 +1,5 @@
 {
-  "model_version": "2.1.0",
+  "model_version": "2.2.0",
   "date": "2026-09-05",
   "weight_warnings": [],
   "synthetic": true,
@@ -45,37 +45,49 @@
         "Q": {
           "score": 96.4,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "G": {
           "score": 81.9,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "V": {
           "score": 82.0,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "F": {
           "score": 79.2,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "T": {
           "score": 87.4,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "N": {
           "score": 74.0,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         }
       },
@@ -431,6 +443,437 @@
       }
     },
     {
+      "code": "no_coverage",
+      "name": "无覆盖样本（结构性缺失）",
+      "industry": "合成行业",
+      "holding": true,
+      "current_weight": 5,
+      "cost_price": null,
+      "market_value": null,
+      "pnl_pct": null,
+      "exposure_group": "合成产业链",
+      "tradability": "normal",
+      "profile": "default",
+      "price": 15,
+      "dims": {
+        "Q": 96.4,
+        "G": 76.9,
+        "V": 82.0,
+        "F": 79.2,
+        "T": 87.4,
+        "N": 74.0
+      },
+      "weights": {
+        "Q": 38.461538,
+        "G": 30.769231,
+        "V": 30.769231,
+        "F": 15,
+        "T": 10,
+        "N": 10
+      },
+      "weights_version": "builtin-v2.1",
+      "total": 86.0,
+      "trading_score": 80.1,
+      "grade": "A+",
+      "action": "价值评分很高",
+      "position_cap": 15,
+      "risk_checked": true,
+      "red_flags": [],
+      "data_quality": {
+        "Q": {
+          "score": 96.4,
+          "coverage": 100.0,
+          "imputed_weight": 0,
+          "missing": [],
+          "imputed": [],
+          "not_applicable": []
+        },
+        "G": {
+          "score": 76.9,
+          "coverage": 70.0,
+          "imputed_weight": 30,
+          "missing": [],
+          "imputed": [
+            "forecast",
+            "industry_boom"
+          ],
+          "not_applicable": []
+        },
+        "V": {
+          "score": 82.0,
+          "coverage": 100.0,
+          "imputed_weight": 0,
+          "missing": [],
+          "imputed": [],
+          "not_applicable": []
+        },
+        "F": {
+          "score": 79.2,
+          "coverage": 100.0,
+          "imputed_weight": 0,
+          "missing": [],
+          "imputed": [],
+          "not_applicable": []
+        },
+        "T": {
+          "score": 87.4,
+          "coverage": 100.0,
+          "imputed_weight": 0,
+          "missing": [],
+          "imputed": [],
+          "not_applicable": []
+        },
+        "N": {
+          "score": 74.0,
+          "coverage": 100.0,
+          "imputed_weight": 0,
+          "missing": [],
+          "imputed": [],
+          "not_applicable": []
+        }
+      },
+      "rating_blockers": [],
+      "notes": [
+        "G维度：forecast, industry_boom 无有效来源，按总体期望分插补；插补不提高覆盖率"
+      ],
+      "valuation": {
+        "status": "available",
+        "method": "normalized_pe",
+        "valuation_as_of": "2026-09-05",
+        "horizon": "current_fair_value",
+        "fair_value_bear": 15.0,
+        "fair_value_base": 20,
+        "fair_value_bull": 25.0,
+        "assumptions": {
+          "normalization": "合成样本，非真实预测",
+          "cycle_normalization": "合成完整周期"
+        },
+        "sources": [
+          "synthetic financial statements"
+        ],
+        "scenario_inputs": {
+          "bear": {
+            "eps_normalized": 1.5,
+            "fair_pe": 10
+          },
+          "base": {
+            "eps_normalized": 2,
+            "fair_pe": 10
+          },
+          "bull": {
+            "eps_normalized": 2.5,
+            "fair_pe": 10
+          }
+        },
+        "confidence": "scenario_based",
+        "confidence_reason": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+        "excluded_methods": [
+          "consensus_target",
+          "tech_resistance"
+        ]
+      },
+      "target_price": 20,
+      "target_methods": {
+        "normalized_pe": 20
+      },
+      "target_note": "单一适用模型的条件情景；未校准概率，不是统计置信区间",
+      "reference_prices": {
+        "technical_resistance": 100,
+        "consensus_target": null
+      },
+      "margin_of_safety_pct": 25.0,
+      "upside_pct": 33.3,
+      "stop_loss": 11.64,
+      "stop_methods": {
+        "技术支撑参考": 11.64
+      },
+      "key_points": [],
+      "risks": [],
+      "sources": {
+        "indicator_meta": {
+          "roe_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "gross_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_margin": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "debt_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_profit_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "operating_cashflow_ttm": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "prior_net_profit": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_cv_3y": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "positive_mean": true,
+            "annual_samples": 3
+          },
+          "rev_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "np_yoy": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "qoq_trend": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "pe_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "pb_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "ps_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "basis": "point_in_time",
+            "history_months": 60
+          },
+          "rel_industry_discount": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30",
+            "multiple": "PE"
+          },
+          "main_inflow_20d_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "inflow_5d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "institution_change_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "volume_signal": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "holders_change": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma_alignment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rs_60d": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "macd": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "drawdown_from_250d_high": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "annual_vol": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "rating_buy_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "news_sentiment": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "major_announcement": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "research_visits_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "tech_resistance": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "ma60": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "low_3m": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cycle_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "loss_recovery": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "roe_normalized": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "risk_coverage_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "net_capital_to_netasset": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "provision_coverage": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "npl_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "cet1_buffer_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "core_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "comprehensive_solvency_ratio": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          },
+          "normalized_profit_growth_pct": {
+            "source": "synthetic fixture / not real market data",
+            "as_of": "2026-09-05",
+            "published_at": "2026-08-25",
+            "period_end": "2026-06-30"
+          }
+        },
+        "price_meta": {
+          "source": "synthetic fixture / not real market data",
+          "as_of": "2026-09-05",
+          "published_at": "2026-08-25",
+          "period_end": "2026-06-30"
+        },
+        "risk": {
+          "status": "checked",
+          "events": [],
+          "source": "synthetic risk check",
+          "as_of": "2026-09-05"
+        }
+      }
+    },
+    {
       "code": "bank",
       "name": "合成样本 bank",
       "industry": "合成行业",
@@ -471,37 +914,49 @@
         "Q": {
           "score": 93.8,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "G": {
           "score": 81.9,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "V": {
           "score": 45.2,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "F": {
           "score": 79.2,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "T": {
           "score": 87.4,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         },
         "N": {
           "score": 74.0,
           "coverage": 100.0,
+          "imputed_weight": 0,
           "missing": [],
+          "imputed": [],
           "not_applicable": []
         }
       },
@@ -903,6 +1358,7 @@
         "Q": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 0,
           "missing": [
             "roe_ttm",
             "gross_margin",
@@ -911,15 +1367,19 @@
             "ocf_to_np",
             "np_cv_3y"
           ],
+          "imputed": [],
           "not_applicable": []
         },
         "G": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 30,
           "missing": [
             "rev_yoy",
             "np_yoy",
-            "qoq_trend",
+            "qoq_trend"
+          ],
+          "imputed": [
             "forecast",
             "industry_boom"
           ],
@@ -928,16 +1388,19 @@
         "V": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 0,
           "missing": [
             "margin_of_safety_pct",
             "pe_pct",
             "rel_industry_discount"
           ],
+          "imputed": [],
           "not_applicable": []
         },
         "F": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 0,
           "missing": [
             "main_inflow_20d_pct",
             "inflow_5d",
@@ -945,11 +1408,13 @@
             "volume_signal",
             "holders_change"
           ],
+          "imputed": [],
           "not_applicable": []
         },
         "T": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 0,
           "missing": [
             "ma_alignment",
             "rs_60d",
@@ -957,11 +1422,13 @@
             "drawdown_from_250d_high",
             "annual_vol"
           ],
+          "imputed": [],
           "not_applicable": []
         },
         "N": {
           "score": null,
           "coverage": 0.0,
+          "imputed_weight": 0,
           "missing": [
             "rating_buy_ratio",
             "news_sentiment",
@@ -969,6 +1436,7 @@
             "risk_score",
             "research_visits_3m"
           ],
+          "imputed": [],
           "not_applicable": []
         }
       },
@@ -980,7 +1448,9 @@
         "风险核查未完成或已过期",
         "有效现价或基本面情景估值缺失"
       ],
-      "notes": [],
+      "notes": [
+        "G维度：forecast, industry_boom 无有效来源，按总体期望分插补；插补不提高覆盖率"
+      ],
       "valuation": {
         "status": "unavailable",
         "method": null,
@@ -1030,27 +1500,36 @@
   },
   "allocation": {
     "status": "reference",
-    "equity_pct": 27.0,
-    "cash_pct": 58.0,
+    "equity_pct": 29.99,
+    "cash_pct": 55.01,
     "targets": {
-      "ordinary": 15.0,
-      "bank": 12.0
+      "ordinary": 11.4,
+      "no_coverage": 11.0,
+      "bank": 7.59
     },
     "actions": [
       {
         "code": "ordinary",
         "name": "合成样本 ordinary",
         "current": 5,
-        "target": 15.0,
-        "delta": 10.0,
+        "target": 11.4,
+        "delta": 6.4,
+        "action": "复核目标权重"
+      },
+      {
+        "code": "no_coverage",
+        "name": "无覆盖样本（结构性缺失）",
+        "current": 5,
+        "target": 11.0,
+        "delta": 6.0,
         "action": "复核目标权重"
       },
       {
         "code": "bank",
         "name": "合成样本 bank",
         "current": 5,
-        "target": 12.0,
-        "delta": 7.0,
+        "target": 7.59,
+        "delta": 2.59,
         "action": "复核目标权重"
       }
     ],

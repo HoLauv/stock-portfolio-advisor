@@ -213,13 +213,15 @@ def render_valuation(s):
     inputs = esc(json.dumps(v.get('scenario_inputs', {}), ensure_ascii=False, indent=2))
     audit = esc(json.dumps(s.get('sources', {}), ensure_ascii=False, indent=2))
     missing = ''.join(f'<li>{esc(k)}：{esc(", ".join(d.get("missing", []))) or "无"}</li>' for k, d in s.get('data_quality', {}).items())
+    imputed = ''.join(f'<li>{esc(k)}：按总体期望分插补 {esc(", ".join(d.get("imputed", [])))}（第三方来源缺失，非公司表现差）</li>'
+                      for k, d in s.get('data_quality', {}).items() if d.get('imputed'))
     notes = ''.join(f'<li>{esc(n)}</li>' for n in s.get('notes', []))
     return (f'<div class="valuation-panel"><div class="report-sub">方法 {esc(v.get("method"))} · '
             f'估值日 {esc(v.get("valuation_as_of"))} · 当前公允价值，非未来12个月目标价</div>'
             f'<div class="sc-prices">{values}</div>{refs}'
             f'<details><summary>查看情景假设与输入来源</summary><ul>{assumptions}</ul>'
             f'<pre>{inputs}</pre><ul>{sources}</ul></details>'
-            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{notes}</ul><pre>{audit}</pre></details></div>')
+            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{imputed}{notes}</ul><pre>{audit}</pre></details></div>')
 
 
 def render_stock_card(s):

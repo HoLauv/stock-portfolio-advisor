@@ -3,8 +3,13 @@ import math
 from datetime import date
 from weight_registry import read_registry, resolve, DEFAULT_PATH
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 MIN_COVERAGE = 70
+# 结构性缺失项的总体期望分插补表。
+# 只收"第三方来源缺失、公司自身并不掌握"的前瞻/行业项：没有机构覆盖就没有一致预期，
+# 没有行业数据就没有景气度，这不代表公司表现差。公司自己披露的财务/资金/技术项一律不在此表，
+# 缺失仍贡献0，避免"漏报坏数据反而加分"。
+IMPUTE = {'forecast': 60, 'industry_boom': 50}
 FINANCIAL = {"bank", "broker", "insurance"}
 WEIGHTS = {"default": (25,20,20), "growth": (20,30,15), "value": (30,10,30),
            "cyclical": (25,15,25), "bank": (30,10,25), "broker": (30,10,25), "insurance": (30,10,25)}
@@ -114,22 +119,35 @@ N = [('rating_buy_ratio',25,[(30,0),(50,60),(80,100)]),
 
 
 def score_dimension(m, specs, na=()):
-    earned = available = possible = 0
-    missing = []
+    """维度分=Σ(单项分×权重)/Σ适用项权重。
+
+    缺失项分两类处理：
+    - 可观测项缺失（公司披露的财务/资金/技术等）：贡献0，只进missing，不赠送中性分。
+    - IMPUTE白名单内的结构性缺失项（第三方来源缺失）：按总体期望分计价并计入imputed。
+    覆盖率只统计真实数据权重，插补不会抬高覆盖率，NR门槛完全不受影响。
+    期望值口径下的插补只对"结构性缺失"成立，因此不做全局默认，避免漏报观测项反而加分。
+    """
+    earned = available = possible = imputed_weight = 0
+    missing, imputed = [], []
     for key, weight, curve in specs:
         if key in na:
             continue
         possible += weight
         value = m.get(key)
         sc = curve.get(value) if isinstance(curve,dict) and isinstance(value,str) else interp(value,curve) if isinstance(curve,list) else None
-        if sc is None:
-            missing.append(key)
-        else:
+        if sc is not None:
             earned += sc*weight/100
             available += weight
+        elif key in IMPUTE:
+            earned += IMPUTE[key]*weight/100
+            imputed_weight += weight
+            imputed.append(key)
+        else:
+            missing.append(key)
     coverage = available/possible*100 if possible else 0
     return dict(score=round(earned/possible*100,1) if coverage >= MIN_COVERAGE else None,
-                coverage=round(coverage,1), missing=missing, not_applicable=list(na))
+                coverage=round(coverage,1), imputed_weight=imputed_weight,
+                missing=missing, imputed=imputed, not_applicable=list(na))
 
 
 def checked_metrics(stock, as_of):
@@ -335,19 +353,7 @@ def allocate(stocks,policy):
         return out
     budget = min(policy['equity_budget_pct'],100-cash_min-other)
     pool = [s for s in holdings if s['grade'] not in {'C','D','NR'} and s['total'] is not None and s['total']>=50]
-    weights = {s['code']:0.0 for s in holdings}
-    def room(s):
-        return max(0,min(s['position_cap']-weights[s['code']],*(30-sum(weights[x['code']] for x in holdings if x[g]==s[g]) for g in ('industry','exposure_group'))))
-    for _ in range(100):
-        remain = budget-sum(weights.values())
-        merit = {s['code']:s['total']-45 for s in pool if room(s)>1e-8}
-        if remain<1e-8 or not merit:
-            break
-        for s in sorted(pool,key=lambda x:x['code']):
-            c = s['code']
-            if c in merit:
-                weights[c] += min(room(s),remain*merit[c]/sum(merit.values()))
-    weights = {k:math.floor((v+1e-9)*100)/100 for k,v in weights.items()}
+    weights = allocate_budget(holdings,pool,budget)
     equity = round(sum(weights.values()),2)
     out.update(status='reference',equity_pct=equity,requested_equity_pct=budget,other_assets_pct=other,
                cash_pct=round(100-other-equity,2),targets=weights)
@@ -358,6 +364,47 @@ def allocate(stocks,policy):
     if equity<budget-.1:
         out['warnings'].append('受评级/集中度上限约束，未用预算留作现金')
     return out
+
+
+def allocate_budget(holdings, pool, budget, group_cap=30):
+    """按 merit（总分-45）比例填充预算，受单票评级上限与行业/产业链分组上限约束。
+
+    每一轮都先基于**同一份权重快照**计算各标的额度，再一次性提交本轮增量。
+    分组额度不足时按 merit 比例等比压缩该组额度，且压缩发生在单票上限之前——
+    否则会被单票上限先截成同一数值、压缩后退化成平均分配，丢掉评分差异。
+    逐只顺序提交会让排序靠前的标的先占满分组额度，使结果依赖股票代码顺序而非评分质量，
+    因此这里必须同轮同步提交。
+    """
+    groups = ('industry','exposure_group')
+    weights = {s['code']:0.0 for s in holdings}
+    merits = {s['code']:max(s['total']-45,0) for s in pool}
+    def own_room(s):
+        return max(0.0,s['position_cap']-weights[s['code']])
+    def group_room(s, group):
+        return max(0.0,group_cap-sum(weights[x['code']] for x in holdings if x[group]==s[group]))
+    for _ in range(100):
+        remain = budget-sum(weights.values())
+        active = [s for s in pool if merits[s['code']]>0
+                  and min(own_room(s),*(group_room(s,g) for g in groups))>1e-8]
+        if remain<1e-8 or not active:
+            break
+        total_merit = sum(merits[s['code']] for s in active)
+        base = {s['code']:remain*merits[s['code']]/total_merit for s in active}
+        limit = {s['code']:own_room(s) for s in active}
+        for group in groups:
+            for name in {s[group] for s in active}:
+                members = [s['code'] for s in active if s[group]==name]
+                room = group_cap-sum(weights[x['code']] for x in holdings if x[group]==name)
+                if sum(min(base[c],limit[c]) for c in members)>room:
+                    scale = room/sum(base[c] for c in members)
+                    for c in members:
+                        limit[c] = min(limit[c],base[c]*scale)
+        step = {c:min(base[c],limit[c]) for c in base}
+        if sum(step.values())<1e-12:
+            break
+        for code,value in step.items():
+            weights[code] += value
+    return {k:math.floor((v+1e-9)*100)/100 for k,v in weights.items()}
 
 
 def map_rating(total):
@@ -423,6 +470,8 @@ def evaluate(data, registry=None):
               ('rel_industry_discount',20,[(-30,100),(-10,72),(0,48),(30,16),(60,0)])]
         quality = dict(Q=score_dimension(m,Q_FIN.get(profile,Q),na),G=score_dimension(m,gs),V=score_dimension(vm,vs),
                        F=score_dimension(m,F),T=score_dimension(m,T),N=score_dimension(m,N))
+        notes = notes + [f'{k}维度：{", ".join(quality[k]["imputed"])} 无有效来源，按总体期望分插补；插补不提高覆盖率'
+                         for k in ('Q','G','V','F','T','N') if quality[k]['imputed']]
         dims = {k:x['score'] for k,x in quality.items()}
         gates = [f'{DIM_NAME[k]}覆盖率不足{MIN_COVERAGE}%' for k in 'QGV' if dims[k] is None]
         critical = {'bank':['roe_ttm','npl_ratio','cet1_buffer_pct'],'broker':['roe_normalized','risk_coverage_ratio'],
