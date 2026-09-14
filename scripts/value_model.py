@@ -3,13 +3,25 @@ import math
 from datetime import date
 from weight_registry import read_registry, resolve, DEFAULT_PATH
 
-VERSION = "2.2.0"
+VERSION = "2.3.0"
 MIN_COVERAGE = 70
 # 结构性缺失项的总体期望分插补表。
 # 只收"第三方来源缺失、公司自身并不掌握"的前瞻/行业项：没有机构覆盖就没有一致预期，
 # 没有行业数据就没有景气度，这不代表公司表现差。公司自己披露的财务/资金/技术项一律不在此表，
 # 缺失仍贡献0，避免"漏报坏数据反而加分"。
 IMPUTE = {'forecast': 60, 'industry_boom': 50}
+# 股息子项曲线与权重。分工刻意不重叠：
+#   V 放"股息率−无风险利率"的利差 —— 衡量现金回报的吸引力，属估值；
+#   Q 放"净利润/现金分红"的覆盖倍数 —— 衡量派息能否持续，属质量。
+# 两者只在数据齐备时进入分母，缺一即整块不启用，避免只报对自己有利的那一半。
+DIV_SPREAD_CURVE = [(-1,0),(0,50),(1,80),(2.5,100)]        # 单位：百分点
+DIV_COVERAGE_CURVE = [(0.8,0),(1.2,45),(1.7,75),(2.5,100)]  # 单位：倍
+DIV_V_WEIGHT = 20
+DIV_Q_WEIGHT = 10
+# 行业景气度：由申万行业财报TTM同比派生，净利为主(70)、营收为辅(30)
+SECTOR_NP_CURVE = [(-20,0),(0,35),(10,60),(25,85),(50,100)]
+SECTOR_REV_CURVE = [(-10,0),(0,40),(10,70),(25,100)]
+# 市场温度可自算的派生指标：原始序列名 → (派生指标名, 最少样本数, 取值域校验, 计算式)
 FINANCIAL = {"bank", "broker", "insurance"}
 WEIGHTS = {"default": (25,20,20), "growth": (20,30,15), "value": (30,10,30),
            "cyclical": (25,15,25), "bank": (30,10,25), "broker": (30,10,25), "insurance": (30,10,25)}
@@ -76,6 +88,24 @@ def interp(x, pts):
         if x <= c:
             return b+(x-a)/(c-a)*(d-b)
     return pts[-1][1]
+
+
+def avg(xs):
+    return sum(xs)/len(xs) if xs else None
+
+
+def industry_boom_from_sector(np_yoy_pct, rev_yoy_pct=None):
+    """申万行业财报TTM同比 → 0–100 行业景气分。
+
+    净利同比权重70、营收同比权重30；只有净利时按净利单口径给分。
+    取行业聚合数据派生，而不是让调用方手填一个0–100的中性值——
+    手填会让所有标的拿到同一个数，等于不含个股信息。
+    """
+    np_score = interp(np_yoy_pct, SECTOR_NP_CURVE)
+    if np_score is None:
+        return None
+    rev_score = interp(rev_yoy_pct, SECTOR_REV_CURVE)
+    return round(np_score if rev_score is None else .7*np_score+.3*rev_score, 1)
 
 
 # 字段、权重、0–100分的插值点/枚举；缺失项保留分母，不赠送中性分。
@@ -150,11 +180,12 @@ def score_dimension(m, specs, na=()):
                 missing=missing, imputed=imputed, not_applicable=list(na))
 
 
-def checked_metrics(stock, as_of):
+def checked_metrics(stock, as_of, risk_free=None):
     raw, meta = stock.get('indicators',{}), stock.get('indicator_meta',{})
-    financial = {s[0] for s in Q+G+sum(Q_FIN.values(),[])} | {'net_profit_ttm','operating_cashflow_ttm','prior_net_profit','normalized_profit_growth_pct'}
+    financial = {s[0] for s in Q+G+sum(Q_FIN.values(),[])} | {'net_profit_ttm','operating_cashflow_ttm','prior_net_profit','normalized_profit_growth_pct','cash_dividend_ttm'}
     financial -= {'forecast','industry_boom'}
-    slow = {'forecast','industry_boom','cycle_recovery','institution_change_pct','holders_change','research_visits_3m'}
+    slow = {'forecast','industry_boom','cycle_recovery','institution_change_pct','holders_change','research_visits_3m',
+            'dividend_yield_pct','sector_np_yoy_pct','sector_rev_yoy_pct'}
     clean, notes = {}, []
     for key,value in raw.items():
         if value is None:
@@ -171,16 +202,28 @@ def checked_metrics(stock, as_of):
     clean.pop('ocf_to_np',None)
     if positive(np_) and number(ocf) and meta.get('net_profit_ttm',{}).get('period_end') == meta.get('operating_cashflow_ttm',{}).get('period_end'):
         clean['ocf_to_np'] = ocf/np_
+    # 股息子项：利差与覆盖倍数都派生，不接受直接输入比值。
+    # 两条必须同时成立才整块启用——否则调用方可以只报有利的那一半。
+    clean.pop('dividend_spread_pct',None); clean.pop('dividend_coverage',None)
+    if number(clean.get('dividend_yield_pct')) and number(risk_free):
+        clean['dividend_spread_pct'] = round(clean['dividend_yield_pct']-risk_free,2)
+    if positive(np_) and positive(clean.get('cash_dividend_ttm')):
+        clean['dividend_coverage'] = round(np_/clean['cash_dividend_ttm'],2)
+    # 行业景气度：有申万行业财报就用真实景气度派生，覆盖调用方手填值。
+    # 留着手填路径是兼容旧输入，但派生一旦可用就以派生为准。
+    boom = industry_boom_from_sector(clean.get('sector_np_yoy_pct'),clean.get('sector_rev_yoy_pct'))
+    if boom is not None:
+        clean['industry_boom'] = boom
     if not positive(clean.get('prior_net_profit')):
         clean.pop('np_yoy',None)
     cv = meta.get('np_cv_3y',{})
     if cv.get('positive_mean') is not True or not number(cv.get('annual_samples')) or cv['annual_samples'] < 3:
         clean.pop('np_cv_3y',None)
-    for key in ('debt_ratio','gross_margin','rating_buy_ratio','industry_boom','pe_pct','pb_pct','ps_pct','drawdown_from_250d_high'):
+    for key in ('debt_ratio','gross_margin','rating_buy_ratio','industry_boom','pe_pct','pb_pct','ps_pct','drawdown_from_250d_high','dividend_yield_pct'):
         if key in clean and (not number(clean[key]) or not 0 <= clean[key] <= 100):
             clean.pop(key)
             notes.append(f'{key}: 超出0–100有效范围')
-    for key in ('annual_vol','np_cv_3y','npl_ratio','provision_coverage','core_solvency_ratio','comprehensive_solvency_ratio','research_visits_3m'):
+    for key in ('annual_vol','np_cv_3y','npl_ratio','provision_coverage','core_solvency_ratio','comprehensive_solvency_ratio','research_visits_3m','cash_dividend_ttm'):
         if key in clean and (not number(clean[key]) or clean[key] < 0):
             clean.pop(key)
     for key in ('pe_pct','pb_pct','ps_pct'):
@@ -299,7 +342,46 @@ def calc_valuation(stock,profile,as_of):
     return out
 
 
+def derive_market_indicators(mk):
+    """市场温度所需指标的自算层：显式给值优先，缺失才从原始序列自算。
+
+    拿不到现成的 volume_ratio_5_250 / up_ratio_20d 时不再直接放弃温度分，
+    改为用全市场成交额序列与逐日上涨占比序列算出来（成交额近似全市场量能）。
+    派生值继承来源序列的 meta（`indicator_meta.<序列名>`），仍要过证据门槛，不走后门。
+    返回 (补齐后的 market, {派生指标: 来源序列名})。
+    """
+    out, derived = dict(mk), {}
+    source_meta = dict(out.get('indicator_meta') or {})
+    meta = dict(source_meta)
+
+    def usable(name, least, ok):
+        s = out.get(name)
+        if not isinstance(s,list) or len(s) < least or not all(number(x) and ok(x) for x in s):
+            return None
+        return s
+
+    close = usable('hs300_close_series',250,lambda x:x>0)
+    turnover = usable('turnover_series',250,lambda x:x>0)
+    advance = usable('advance_ratio_series',20,lambda x:0<=x<=100)
+    for key, src, value in (
+            ('hs300_ma250_dev','hs300_close_series',
+             (close[-1]/avg(close[-250:])-1)*100 if close else None),
+            ('volume_ratio_5_250','turnover_series',
+             avg(turnover[-5:])/avg(turnover[-250:]) if turnover else None),
+            ('up_ratio_20d','advance_ratio_series',
+             avg(advance[-20:]) if advance else None)):
+        if number(out.get(key)) or not number(value):
+            continue
+        out[key] = value
+        derived[key] = src
+        if isinstance(source_meta.get(src),dict):
+            meta[key] = source_meta[src]
+    out['indicator_meta'] = meta
+    return out, derived
+
+
 def market_temperature(mk,as_of):
+    mk, derived = derive_market_indicators(mk if isinstance(mk,dict) else {})
     specs = [('hs300_ma250_dev',30,[(-15,15),(0,50),(15,85)]),
              ('volume_ratio_5_250',20,[(.6,15),(1,50),(1.5,85)]),
              ('up_ratio_20d',20,[(35,15),(50,50),(60,85)]),
@@ -312,8 +394,10 @@ def market_temperature(mk,as_of):
         valid.pop('volume_ratio_5_250')
     temp = round(sum(interp(valid[k],pts)*w for k,w,pts in specs)/85,1) if len(valid)==4 else None
     state = '数据不足' if temp is None else '过热' if temp>=80 else '偏热' if temp>=65 else '中性' if temp>=40 else '偏冷' if temp>=25 else '冰点'
+    notes = [f'缺失或过期：{k}' for k,_,_ in specs if k not in valid]
+    notes += [f'{k} 由 {src} 自算（未提供现成值）' for k,src in derived.items()]
     return dict(temperature=temp,state=state,equity_range=None,cash_range=None,tone='市场温度不自动决定仓位',
-                comment=mk.get('comment',''),notes=[f'缺失或过期：{k}' for k,_,_ in specs if k not in valid])
+                comment=mk.get('comment',''),derived=derived,notes=notes)
 
 
 def allocate(stocks,policy):
@@ -419,6 +503,11 @@ def evaluate(data, registry=None):
             raise ValueError(f'{k}需为对象，未知可省略或填空对象')
     as_of,results,codes = data.get('date'),[],set()
     weight_warnings = []
+    # 无风险利率是市场级输入，供股息利差使用；同样要过证据门槛，缺失则股息子项整体不启用
+    market = data.get('market',{})
+    risk_free = market.get('risk_free_rate_pct')
+    if not (number(risk_free) and 0 < risk_free <= 20) or evidence_error(market.get('indicator_meta',{}).get('risk_free_rate_pct'),as_of,90):
+        risk_free = None
     if registry is None:
         try:
             registry = read_registry(DEFAULT_PATH)
@@ -446,7 +535,7 @@ def evaluate(data, registry=None):
         profile = resolve_profile(stock.get('industry'),stock.get('profile'))
         value_weights, weight_version, _ = resolve(registry,profile,as_of,WEIGHTS.get(profile,WEIGHTS['default']))
         w = value_weights | dict(F=15,T=10,N=10)
-        m,notes = checked_metrics(stock,as_of)
+        m,notes = checked_metrics(stock,as_of,risk_free)
         risk_checked,flags,risk_score = check_risk(stock,as_of)
         m['risk_score'] = risk_score
         valuation = calc_valuation(stock,profile,as_of)
@@ -465,13 +554,37 @@ def evaluate(data, registry=None):
         vm = dict(m,margin_of_safety_pct=margin)
         if stock.get('indicator_meta',{}).get('rel_industry_discount',{}).get('multiple')!=pct[:2].upper():
             vm.pop('rel_industry_discount',None)
-        vs = [('margin_of_safety_pct',60,[(-50,0),(-20,20),(0,50),(20,75),(40,100)]),
-              (pct,20,[(0,100),(20,80),(50,50),(80,15),(100,0)]),
-              ('rel_industry_discount',20,[(-30,100),(-10,72),(0,48),(30,16),(60,0)])]
-        quality = dict(Q=score_dimension(m,Q_FIN.get(profile,Q),na),G=score_dimension(m,gs),V=score_dimension(vm,vs),
+        # 股息子项：利差与覆盖倍数必须同时可用才启用，缺一即整块退出分母。
+        # 这样没有股息数据的标的评分与旧版完全一致，不会被"没查分红"变相扣分。
+        dividend_on = 'dividend_spread_pct' in m and 'dividend_coverage' in m
+        if dividend_on:
+            vs = [('margin_of_safety_pct',50,[(-50,0),(-20,20),(0,50),(20,75),(40,100)]),
+                  (pct,15,[(0,100),(20,80),(50,50),(80,15),(100,0)]),
+                  ('rel_industry_discount',15,[(-30,100),(-10,72),(0,48),(30,16),(60,0)]),
+                  ('dividend_spread_pct',DIV_V_WEIGHT,DIV_SPREAD_CURVE)]
+        else:
+            vs = [('margin_of_safety_pct',60,[(-50,0),(-20,20),(0,50),(20,75),(40,100)]),
+                  (pct,20,[(0,100),(20,80),(50,50),(80,15),(100,0)]),
+                  ('rel_industry_discount',20,[(-30,100),(-10,72),(0,48),(30,16),(60,0)])]
+        qs = list(Q_FIN.get(profile,Q))
+        if dividend_on:
+            # 追加股息子项时按比例压缩其余项，使 Q 的权重总和仍为100。
+            # 不压缩的话分母变成110，等于给原有每一项都悄悄降权，Q 会被动漂移。
+            scale = (100-DIV_Q_WEIGHT)/100
+            qs = [(k,round(w*scale,6),c) for k,w,c in qs]+[('dividend_coverage',DIV_Q_WEIGHT,DIV_COVERAGE_CURVE)]
+        quality = dict(Q=score_dimension(m,qs,na),G=score_dimension(m,gs),V=score_dimension(vm,vs),
                        F=score_dimension(m,F),T=score_dimension(m,T),N=score_dimension(m,N))
         notes = notes + [f'{k}维度：{", ".join(quality[k]["imputed"])} 无有效来源，按总体期望分插补；插补不提高覆盖率'
                          for k in ('Q','G','V','F','T','N') if quality[k]['imputed']]
+        if dividend_on:
+            notes.append(f"股息子项已启用：利差{m['dividend_spread_pct']}pp（股息率{m['dividend_yield_pct']}%−无风险利率{risk_free}%），"
+                         f"盈利覆盖{m['dividend_coverage']}倍；利差计V、覆盖计Q，不重复计分")
+        elif number(m.get('dividend_yield_pct')):
+            notes.append('已提供股息率，但缺有效无风险利率或现金分红，股息子项不启用，不进分母')
+        if number(m.get('sector_np_yoy_pct')):
+            notes.append(f"行业景气度由申万行业财报派生：净利同比{m['sector_np_yoy_pct']}%"
+                         + (f"、营收同比{m['sector_rev_yoy_pct']}%" if number(m.get('sector_rev_yoy_pct')) else '（无营收项，按净利单口径）')
+                         + '；派生优先于手填')
         dims = {k:x['score'] for k,x in quality.items()}
         gates = [f'{DIM_NAME[k]}覆盖率不足{MIN_COVERAGE}%' for k in 'QGV' if dims[k] is None]
         critical = {'bank':['roe_ttm','npl_ratio','cet1_buffer_pct'],'broker':['roe_normalized','risk_coverage_ratio'],
@@ -509,6 +622,10 @@ def evaluate(data, registry=None):
         if isinstance(inst,list) and len({x.strip() for x in inst if isinstance(x,str) and x.strip()})>=3 and not evidence_error(ct,as_of,90) and positive(ct.get('target')) and ct.get('horizon'):
             refs.update(consensus_target=ct['target'],consensus_horizon=ct['horizon'])
         results.append({**{k:stock.get(k) for k in ('code','name','industry','holding','current_weight','cost_price','market_value','pnl_pct','exposure_group','tradability')},
+                        'dividend':dict(enabled=dividend_on,yield_pct=m.get('dividend_yield_pct'),spread_pct=m.get('dividend_spread_pct'),
+                                        coverage=m.get('dividend_coverage'),
+                                        spread_score=round(interp(m.get('dividend_spread_pct'),DIV_SPREAD_CURVE),1) if dividend_on else None,
+                                        coverage_score=round(interp(m.get('dividend_coverage'),DIV_COVERAGE_CURVE),1) if dividend_on else None) if (dividend_on or number(m.get('dividend_yield_pct'))) else None,
                         'profile':profile,'price':price,'dims':dims,'weights':w,'weights_version':weight_version,'total':total,'trading_score':trading,
                         'tradability':stock.get('tradability') if not evidence_error(stock.get('tradability_meta'),as_of,1) else None,
                         'grade':grade,'action':action,'position_cap':cap,'risk_checked':risk_checked,'red_flags':flags,
@@ -552,7 +669,8 @@ def compute_delta(cur,prev):
 
 
 def template():
-    fields = {s[0] for s in Q+G+F+T+N+sum(Q_FIN.values(),[])} | {'net_profit_ttm','operating_cashflow_ttm','prior_net_profit','pe_pct','pb_pct','ps_pct','rel_industry_discount','cycle_recovery','loss_recovery','normalized_profit_growth_pct','ma60','low_3m','tech_resistance','major_shareholder_reduce_pct','goodwill_to_netasset'}
+    fields = {s[0] for s in Q+G+F+T+N+sum(Q_FIN.values(),[])} | {'net_profit_ttm','operating_cashflow_ttm','prior_net_profit','pe_pct','pb_pct','ps_pct','rel_industry_discount','cycle_recovery','loss_recovery','normalized_profit_growth_pct','ma60','low_3m','tech_resistance','major_shareholder_reduce_pct','goodwill_to_netasset','dividend_yield_pct','cash_dividend_ttm','sector_np_yoy_pct','sector_rev_yoy_pct'}
+    # 派生项不填：ocf_to_np、risk_score 由模型算；dividend_spread_pct/dividend_coverage/industry_boom 同理
     fields -= {'risk_score','ocf_to_np'}
     return dict(schema_version=VERSION,date=None,market={},
                 portfolio_policy={k:None for k in ('risk_tolerance','horizon_years','max_drawdown_pct','total_assets','cash_need_pct','equity_budget_pct','other_assets_pct','holdings_complete','weight_basis')},

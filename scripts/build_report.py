@@ -216,12 +216,20 @@ def render_valuation(s):
     imputed = ''.join(f'<li>{esc(k)}：按总体期望分插补 {esc(", ".join(d.get("imputed", [])))}（第三方来源缺失，非公司表现差）</li>'
                       for k, d in s.get('data_quality', {}).items() if d.get('imputed'))
     notes = ''.join(f'<li>{esc(n)}</li>' for n in s.get('notes', []))
+    div = s.get('dividend')
+    dividend = ''
+    if div:
+        if div.get('enabled'):
+            dividend = (f'<li>股息子项已启用：利差 {fmt(div.get("spread_pct"), "pp", 2)} 计入估值维度，'
+                        f'盈利覆盖 {fmt(div.get("coverage"), "×", 2)} 计入基本面维度，不重复计分</li>')
+        else:
+            dividend = '<li>股息子项未启用（缺有效无风险利率或现金分红），不进分母，不影响本次评分</li>'
     return (f'<div class="valuation-panel"><div class="report-sub">方法 {esc(v.get("method"))} · '
             f'估值日 {esc(v.get("valuation_as_of"))} · 当前公允价值，非未来12个月目标价</div>'
             f'<div class="sc-prices">{values}</div>{refs}'
             f'<details><summary>查看情景假设与输入来源</summary><ul>{assumptions}</ul>'
             f'<pre>{inputs}</pre><ul>{sources}</ul></details>'
-            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{imputed}{notes}</ul><pre>{audit}</pre></details></div>')
+            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{imputed}{dividend}{notes}</ul><pre>{audit}</pre></details></div>')
 
 
 def render_stock_card(s):
@@ -244,6 +252,19 @@ def render_stock_card(s):
                   if s.get("holding") else
                   '<span class="badge badge-watch">自选</span>')
 
+    div = s.get('dividend')
+    if div and div.get('enabled'):
+        div_html = (f'<div>股息率<b>{fmt(div.get("yield_pct"), "%", 2)}</b></div>'
+                    f'<div>股息利差<b>{fmt(div.get("spread_pct"), "pp", 2)}'
+                    f'（{fmt(div.get("spread_score"), digits=0)}分）</b></div>'
+                    f'<div>盈利覆盖<b>{fmt(div.get("coverage"), "×", 2)}'
+                    f'（{fmt(div.get("coverage_score"), digits=0)}分）</b></div>')
+    elif div:
+        div_html = (f'<div>股息率<b>{fmt(div.get("yield_pct"), "%", 2)}</b></div>'
+                    f'<div>股息子项<b>未启用</b></div>')
+    else:
+        div_html = ''
+
     prices = (
         f'<div>现价<b>{fmt(s.get("price"))}</b></div>'
         f'<div>成本价<b>{fmt(s.get("cost_price"))}</b></div>'
@@ -253,6 +274,7 @@ def render_stock_card(s):
         f'<div>技术支撑参考<b>{fmt(s.get("stop_loss"))}</b></div>'
         f'<div>安全边际<b>{fmt(s.get("margin_of_safety_pct"), "%", 1)}</b></div>'
         f'<div>交易环境分<b>{fmt(s.get("trading_score"), digits=1)}</b></div>'
+        f'{div_html}'
     )
 
     pnl = s.get("pnl_pct")

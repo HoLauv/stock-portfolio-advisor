@@ -42,9 +42,10 @@ $WD kline sh000300 --period day --limit 250   # 沪深300 日线，用于算 MA2
 
 ```bash
 WD="npx -y westock-data-skillhub@1.0.5"
-$WD quote $CODES                         # 实时快照：现价/涨跌幅/成交额/换手
+$WD kline $CODES --period day --limit 1        # 最新快照：现价/成交额（没有 quote 命令）
 $WD kline $CODES --period day --limit 250      # 日线（算 MA20/60/250、回撤、波动率）
-$WD finance $CODES --num 8               # 三大报表近 8 期（算 ROE/毛利率/负债率/现金流/增速）
+$WD finance $CODES --type income --num 8       # 利润表近 8 期（算 ROE/增速/TTM 净利）
+$WD finance $CODES --num 8                     # 三大报表
 $WD technical $CODES --indicator macd    # MACD/KDJ/RSI/BOLL
 $WD fund flow $CODES                     # 主力资金流向
 $WD score $CODES                         # 官方诊股评分（综合/资金/基本面/风险/技术 + 周/月/季变动）
@@ -52,26 +53,72 @@ $WD consensus $CODES                     # 机构一致预期；仅独立参考�
 $WD report list $CODES --limit 5         # 近期研报列表
 ```
 
+> **命令名易错点（实测踩过）**：`quote` 与 `flow` 都**不是**顶层命令。
+> 现价用 `kline --limit 1`；资金用 `fund flow`；北向用 `fund north-holding`；
+> 分红用 `dividend list`；板块搜索用 `search <关键词> --type sector`（不是 `sector search`）。
+> 拿不准就先 `$WD <命令>` 不带参数，会打印用法。
+
 补充（按需，同样批量）：
 ```bash
 $WD risk $CODES                          # 风险事件：ST/质押/解禁/诉讼/高管减持
 $WD notice list $CODES --limit 10        # 公告列表
 $WD shareholder $CODES                   # 股东户数、十大股东变化
-$WD north-holding $CODES                 # 北向持股（A股）
-$WD dividend $CODES --years 3            # 分红（红利类必看）
+$WD fund north-holding $CODES            # 北向持股（A股）
+$WD dividend list $CODES --years 3       # 分红（v2.3 股息子项必需；注意要带 list）
 $WD profile <code>                       # 公司概况（单代码，按需）
 ```
 
 ### A3. 行业与板块（用于估值分位与景气度）
 
 ```bash
-$WD sector search 银行                   # 先搜板块拿 code
+$WD search 银行 --type sector            # 先搜板块拿 code（不是 sector search）
 $WD sector valuation pt01801080          # 板块 PE/PB/PS + 历史百分位
-$WD sector finance pt01801780            # 申万行业财报 TTM 聚合（景气度）
-$WD sector ranking                       # 板块涨幅榜
+$WD sector finance pt01801780            # 申万行业财务指标（v2.3 行业景气度必需）
+$WD sector ranking                       # 板块行情榜
 ```
 
-### A4. 新闻资讯
+**行业景气度（v2.3.0）**：`sector finance` 取行业财报后，把**行业TTM净利同比**写入
+`sector_np_yoy_pct`、**行业TTM营收同比**写入 `sector_rev_yoy_pct`（都要带 `indicator_meta`）。
+引擎据此派生 `industry_boom`（净利70%+营收30%）。
+取不到就留空——会退回手填值，再没有才按期望分50插补；**不要为了凑分自己编一个景气分**。
+
+### A4. 股息（v2.3.0 股息子项必需）
+
+```bash
+$WD dividend list $CODES --years 3
+```
+
+**换算口径**（引擎只收原始量，利差与覆盖倍数都自己算）：
+
+| 写入字段 | 由什么换算 | 说明 |
+|---|---|---|
+| `dividend_yield_pct` | `每股现金分红TTM / 现价 × 100` | 百分数，0–100 |
+| `cash_dividend_ttm` | 近12个月**现金分红总额**（元） | 与 `net_profit_ttm` 同口径，非负 |
+| `market.risk_free_rate_pct` | 10年期国债收益率（%） | 市场级，90日内有效 |
+
+要点：
+- **把中期分派和年度分派都算进 TTM**。只在年报里取一次会低估算股息率。
+  例：京沪高铁 2025年报 10派0.954 + 2025中报 10派0.385，TTM 每股 0.1339 元。
+- 有**特殊分红**要判断是否可持续，一次性处置收益带来的高股息不宜直接当常态。
+- **不要自己写 `dividend_spread_pct` / `dividend_coverage`**——引擎会丢弃并按原始量重算。
+- 红利类档位（电力/公路/铁路/港口/水务/燃气）**建议每次都取**，否则同一组合里
+  有的标的启用股息子项、有的不启用，横向比较口径不一致。
+
+### A5. 市场温度原始序列（v2.3.0 可自算）
+
+`market` 块里放序列，引擎会自算对应指标（已有现成标量则优先用标量）：
+
+| 原始序列 | 自算出的指标 | 最少样本 | 数据来源 |
+|---|---|---|---|
+| `turnover_series` | `volume_ratio_5_250` | 250 | 两市成交额（`market-overview --type trade` 逐日） |
+| `advance_ratio_series` | `up_ratio_20d` | 20 | 逐日上涨家数占比%（`changedist` 逐日） |
+| `hs300_close_series` | `hs300_ma250_dev` | 250 | `kline sh000300 --period day --limit 250` |
+
+- 每个序列都要配 `indicator_meta.<序列名>`，派生值继承它的来源与日期后才过证据门槛。
+- `broken_net_ratio`（破净比例）**无法从序列派生**，仍需外部提供。
+- 只有 4 项全可用才输出温度分，所以补齐上述三条能把"数据不足"救回来。
+
+### A6. 新闻资讯
 
 **westockdata CLI 无新闻命令**。新闻走两条路：
 1. 连接器 `data_news`（`symbol=代码`，`mode=list/detail`）
@@ -169,3 +216,6 @@ $WD sector ranking                       # 板块涨幅榜
 7. 250日K线不能代替3–5年时点估值序列；8期财报不足时补取年度数据和完整周期样本
 8. 北向/机构数据的真实披露频率与来源已核实，不能推断不可得的日度净流入
 9. 配置权重分母是否为包含现金、其他资产的总资产；风险政策和可交易状态不足时暂不配置
+10. **红利类档位是否取了股息数据**（`dividend list`）：没取则股息子项不启用，报告会标注"未启用"
+11. **行业景气度是否取自 `sector finance`**：不能手填一个 0–100 的景气分，也不能用个股盈利增速代替行业口径
+12. 市场温度若显示"数据不足"，检查四条原始序列是否给全且各带 `indicator_meta`

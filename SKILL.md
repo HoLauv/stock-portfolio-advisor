@@ -1,10 +1,10 @@
 ---
 name: stock-portfolio-advisor
-description: 分析A股自选与持仓，获取行情、财报、风险与新闻，按行业计算价值评分和独立交易环境分，输出基本面情景估值、数据缺口及受用户风险政策约束的配置参考，并生成离线HTML报告。适用于股票诊断、持仓复盘、投资价值评分和组合配置请求；不自动下单。 English — Deterministic value scoring and allocation for China A-share watchlists and holdings; sector-routed scoring, separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting and constrained allocation reference; renders an offline HTML report. Pure Python stdlib, 54 unit tests. Not investment advice.
+description: 分析A股自选与持仓，获取行情、财报、风险与新闻，按行业计算价值评分和独立交易环境分，输出基本面情景估值、数据缺口及受用户风险政策约束的配置参考，并生成离线HTML报告。适用于股票诊断、持仓复盘、投资价值评分和组合配置请求；不自动下单。 English — Deterministic value scoring and allocation for China A-share watchlists and holdings; sector-routed scoring, separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting and constrained allocation reference; renders an offline HTML report. Pure Python stdlib, 72 unit tests. Not investment advice.
 
 # ===== SkillHub 发布字段（上架必需，顶层）=====
 slug: stock-portfolio-advisor
-version: 2.2.0
+version: 2.3.0
 displayName: 股票投资价值评分
 summary: 上传持仓截图，即可给自选与持仓股票做六维量化评分（0-100），自动输出评级、目标价、止损位、评分变化归因与资产配置建议，并生成可离线打开的 HTML 报告。
 category: 金融分析
@@ -20,7 +20,7 @@ license: MIT
 
 # ===== 本地兼容字段 + ClawHub 分类/标签（保留）=====
 metadata:
-  version: 2.2.0
+  version: 2.3.0
   categories: ["finance"]
   tags:
     - stock

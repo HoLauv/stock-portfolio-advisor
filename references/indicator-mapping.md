@@ -39,7 +39,13 @@
 - `forecast`：beat/inline/flat/miss，必须有可比预期与实际口径；无预期不得用猜测补充。
 - `cycle_recovery` / `loss_recovery`：improving/flat/deteriorating，分别用于周期和亏损企业；记录量价、利润率、产能和恢复路径的证据。
 - `normalized_profit_growth_pct`：券商/保险正常化盈利增长，不能用牛市利润直接外推。
-- `industry_boom`：行业景气分位0–100；行业营收/利润数据口径一致。
+- `sector_np_yoy_pct` / `sector_rev_yoy_pct`：**申万行业财报TTM净利/营收同比**，百分数，取行业聚合口径（用 `westockdata sector finance`）。引擎据此派生 `industry_boom`（净利70%+营收30%，只有净利时单口径），净利曲线`-20→0/0→35/10→60/25→85/50→100`、营收曲线`-10→0/0→40/10→70/25→100`。
+- `industry_boom`：**不再手填**。有行业数据时由上面两项派生并覆盖手填值；行业数据缺失或过不了证据门槛时才退回手填，仍没有则按期望分50插补。行业口径必须与个股所属行业一致，跨行业拼接无效。
+- `dividend_yield_pct`：股息率百分数（每股现金分红TTM/现价×100），0–100，慢变量（90日）。
+- `cash_dividend_ttm`：最近12个月**现金分红总额**，元，与净利同口径，非负；财报级（550日）字段。
+- `dividend_spread_pct`：**派生项，不接受输入**。= `dividend_yield_pct − market.risk_free_rate_pct`；曲线`-1→0/0→50/1→80/2.5→100`个百分点，进 V（权重20）。
+- `dividend_coverage`：**派生项，不接受输入**。= `net_profit_ttm / cash_dividend_ttm`；曲线`0.8→0/1.2→45/1.7→75/2.5→100`倍，进 Q（权重10）。
+  上述两项必须**同时**可算才启用股息子项，缺一即整块不进分母。缺有效无风险利率时同样不启用。
 
 金融Q额外字段：银行`provision_coverage`、`npl_ratio`、`cet1_buffer_pct`；券商`roe_normalized`、`risk_coverage_ratio`、`net_capital_to_netasset`；保险`roe_normalized`、`core_solvency_ratio`、`comprehensive_solvency_ratio`。均为百分数，其中cet1_buffer_pct为实际核心一级资本率减该银行适用监管要求的**百分点差**。不能把通用阈值当成当前法规。
 
@@ -82,6 +88,11 @@ DCF公式：`ΣCF_t/(1+r)^t + terminal_cashflow/(r-g)/(1+r)^N`。要求r>0、-10
 `consensus`独立对象：`target`、`institutions`（至少3个去重机构名）、`source`、`as_of`（90日内）、`horizon`。单一机构重复研报不得凑数量；保留机构预测年度与分歧记录。
 
 ## 风险、配置与版本
+
+`market`块除四个温度标量外，可放下列**原始序列**让引擎自算（显式给值优先，序列需自带`indicator_meta.<序列名>`）：
+`hs300_close_series`（沪深300收盘，≥250）、`turnover_series`（全市场成交额，≥250，近似量能）、`advance_ratio_series`（逐日上涨家数占比%，≥20）。
+另需`risk_free_rate_pct`（10年期国债收益率%，0–20，90日内有效）供股息利差使用。`broken_net_ratio`无法派生，仍需外部提供。
+自算结果记在`market.derived`，`notes`同步写明。
 
 `risk={status:checked, events:[], source:..., as_of:...}`表示7日内已核查无风险。未查或失败：status=not_checked/failed，events=null。风险标签ST、*ST、退市预警、立案调查使用标准名称。
 财务降级字段`major_shareholder_reduce_pct`（近30日占总股本比例）、`goodwill_to_netasset`均百分数并附meta。

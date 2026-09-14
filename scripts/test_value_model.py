@@ -320,5 +320,223 @@ class ModelTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;',html)
 
 
+def eval_one(s, **market):
+    """在默认市场上叠加市场级输入；新增键自动补合成 meta。"""
+    d = data([s])
+    for k, v in market.items():
+        d['market'][k] = v
+        d['market']['indicator_meta'][k] = meta()
+    return m.evaluate(d)['stocks'][0]
+
+
+def with_dividend(s, yld=4.5, cash_dividend=40):
+    """补股息原始输入。利差与覆盖倍数由模型派生，不接受直接输入。"""
+    s['indicators'].update(dividend_yield_pct=yld, cash_dividend_ttm=cash_dividend)
+    for k in ('dividend_yield_pct','cash_dividend_ttm'):
+        s['indicator_meta'][k] = meta()
+    return s
+
+
+def with_sector(s, np_yoy=30, rev_yoy=None):
+    s['indicators']['sector_np_yoy_pct'] = np_yoy
+    s['indicator_meta']['sector_np_yoy_pct'] = meta()
+    if rev_yoy is not None:
+        s['indicators']['sector_rev_yoy_pct'] = rev_yoy
+        s['indicator_meta']['sector_rev_yoy_pct'] = meta()
+    return s
+
+
+class DividendTests(unittest.TestCase):
+    """股息子项：V 收利差、Q 收覆盖倍数；缺一半就整块不启用。"""
+
+    def test_absent_dividend_data_changes_nothing(self):
+        base = eval_one(stock(profile='value'))
+        self.assertIsNone(base['dividend'])
+        s = stock(profile='value')
+        s['indicators'].pop('pe_pct')          # 只动无关项，确认基线可比
+        self.assertNotEqual(eval_one(s)['dims']['V'], base['dims']['V'])
+
+    def test_each_half_alone_does_not_activate(self):
+        base = eval_one(stock(profile='value'))
+        # 只有股息率、没有现金分红
+        s = stock(profile='value')
+        s['indicators']['dividend_yield_pct'] = 4.5
+        s['indicator_meta']['dividend_yield_pct'] = meta()
+        half = eval_one(s, risk_free_rate_pct=2.0)
+        self.assertFalse(half['dividend']['enabled'])
+        self.assertEqual(half['dims'], base['dims'])
+        self.assertEqual(half['total'], base['total'])
+        # 原始数据齐全但没有无风险利率
+        no_rf = eval_one(with_dividend(stock(profile='value')))
+        self.assertFalse(no_rf['dividend']['enabled'])
+        self.assertEqual(no_rf['dims'], base['dims'])
+
+    def test_high_yield_raises_and_negative_spread_lowers(self):
+        base = eval_one(stock(profile='value'))
+        rich = eval_one(with_dividend(stock(profile='value')), risk_free_rate_pct=2.0)
+        self.assertTrue(rich['dividend']['enabled'])
+        self.assertEqual(rich['dividend']['spread_pct'], 2.5)     # 4.5 − 2.0
+        self.assertEqual(rich['dividend']['coverage'], 2.5)       # 100 / 40
+        self.assertGreater(rich['dims']['V'], base['dims']['V'])
+        self.assertGreater(rich['dims']['Q'], base['dims']['Q'])
+        self.assertGreater(rich['total'], base['total'])
+        # 股息率低于无风险利率：利差为负，应按 0 分处理并压低估值分
+        poor = eval_one(with_dividend(stock(profile='value'), yld=0.5), risk_free_rate_pct=2.0)
+        self.assertEqual(poor['dividend']['spread_pct'], -1.5)
+        self.assertLess(poor['dims']['V'], base['dims']['V'])
+        self.assertLess(poor['total'], base['total'])
+
+    def test_low_earnings_coverage_scores_lower(self):
+        thin = eval_one(with_dividend(stock(profile='value'), cash_dividend=95), risk_free_rate_pct=2.0)
+        thick = eval_one(with_dividend(stock(profile='value'), cash_dividend=30), risk_free_rate_pct=2.0)
+        self.assertLess(thin['dividend']['coverage'], thick['dividend']['coverage'])
+        self.assertLess(thin['dims']['Q'], thick['dims']['Q'])
+
+    def test_derived_fields_cannot_be_injected(self):
+        """利差与覆盖倍数一律由原始数据重算，直接塞分值不生效。"""
+        s = with_dividend(stock(profile='value'))
+        s['indicators'].update(dividend_spread_pct=999, dividend_coverage=999)
+        for k in ('dividend_spread_pct','dividend_coverage'):
+            s['indicator_meta'][k] = meta()
+        r = eval_one(s, risk_free_rate_pct=2.0)
+        self.assertEqual(r['dividend']['spread_pct'], 2.5)
+        self.assertEqual(r['dividend']['coverage'], 2.5)
+        # 只塞派生字段、不给原始数据 → 完全不启用
+        bare = stock(profile='value')
+        bare['indicators'].update(dividend_spread_pct=999, dividend_coverage=999)
+        for k in ('dividend_spread_pct','dividend_coverage'):
+            bare['indicator_meta'][k] = meta()
+        off = eval_one(bare, risk_free_rate_pct=2.0)
+        self.assertIsNone(off['dividend'])
+        self.assertEqual(off['dims'], eval_one(stock(profile='value'))['dims'])
+
+    def test_weights_stay_summed_to_hundred(self):
+        """股息子项只在维度内部让权，Q/G/V 之间的相对权重与总和都不变。"""
+        base = eval_one(stock(profile='value'))
+        on = eval_one(with_dividend(stock(profile='value')), risk_free_rate_pct=2.0)
+        self.assertEqual(sum(base['weights'][k] for k in 'QGV'), 100)
+        self.assertEqual(sum(on['weights'][k] for k in 'QGV'), 100)
+        self.assertEqual(base['weights'], on['weights'])
+        self.assertEqual(on['dividend']['spread_score'], 100.0)      # 利差 2.5pp 顶格
+        self.assertEqual(on['dividend']['coverage_score'], 100.0)    # 覆盖 2.5 倍顶格
+
+    def test_dividend_block_is_rendered_in_report(self):
+        css = Path(__file__).resolve().parent.parent.joinpath('assets/report.css').read_text(encoding='utf-8')
+        s = with_dividend(stock(profile='value'))
+        d = data([s])
+        d['market']['risk_free_rate_pct'] = 2.0
+        d['market']['indicator_meta']['risk_free_rate_pct'] = meta()
+        html = build_report.render(m.evaluate(d), css)
+        self.assertIn('股息利差', html)
+        self.assertIn('盈利覆盖', html)
+        self.assertIn('股息子项已启用', html)
+
+    def test_activation_is_traced_in_notes(self):
+        r = eval_one(with_dividend(stock(profile='value')), risk_free_rate_pct=2.0)
+        self.assertTrue(any('股息子项已启用' in n for n in r['notes']))
+        r = eval_one(with_dividend(stock(profile='value')))
+        self.assertTrue(any('股息子项不启用' in n for n in r['notes']))
+
+
+class IndustryBoomTests(unittest.TestCase):
+    """行业景气度改由申万行业财报派生,替代对所有标的等额 50 分的插补。"""
+
+    def test_sector_finance_overrides_handtyped_value(self):
+        base = eval_one(stock())                    # 手填 industry_boom=80
+        self.assertEqual(base['dims']['G'], 81.9)
+        self.assertFalse(base['data_quality']['G']['imputed'])
+        derived = eval_one(with_sector(stock(), np_yoy=30))
+        self.assertFalse(derived['data_quality']['G']['imputed'])
+        self.assertNotIn('industry_boom', derived['data_quality']['G']['missing'])
+        self.assertGreater(derived['dims']['G'], base['dims']['G'])
+
+    def test_boom_differs_across_stocks(self):
+        hot = eval_one(with_sector(stock('hot'), np_yoy=45, rev_yoy=20))
+        cold = eval_one(with_sector(stock('cold'), np_yoy=-10, rev_yoy=-10))
+        self.assertGreater(hot['dims']['G'], cold['dims']['G'])
+        self.assertGreater(m.industry_boom_from_sector(45, 20), m.industry_boom_from_sector(-10, -10))
+
+    def test_revenue_component_has_thirty_percent_weight(self):
+        np_only = m.industry_boom_from_sector(30)
+        self.assertEqual(np_only, 88.0)
+        self.assertGreater(m.industry_boom_from_sector(30, 30), np_only)
+        self.assertLess(m.industry_boom_from_sector(30, -10), np_only)
+        self.assertIsNone(m.industry_boom_from_sector(None))
+
+    def test_falls_back_to_impute_without_sector_data(self):
+        s = stock(); s['indicators'].pop('industry_boom')
+        r = eval_one(s)
+        self.assertEqual(r['data_quality']['G']['imputed'], ['industry_boom'])
+        self.assertGreater(r['dims']['G'], 59.9)
+
+    def test_sector_data_must_pass_evidence_gate(self):
+        s = with_sector(stock(), np_yoy=30)
+        s['indicators'].pop('industry_boom')
+        # 有有效行业数据 → 派生，不走插补
+        self.assertFalse(eval_one(copy.deepcopy(s))['data_quality']['G']['imputed'])
+        # 无 meta / 过期 / 无来源 → 过不了门槛，退回插补
+        for edit in ({'as_of':'2025-01-01'}, {'source':''}):
+            s2 = copy.deepcopy(s)
+            s2['indicator_meta']['sector_np_yoy_pct'].update(edit)
+            self.assertIn('industry_boom', eval_one(s2)['data_quality']['G']['imputed'])
+        s2 = copy.deepcopy(s); s2['indicator_meta'].pop('sector_np_yoy_pct')
+        self.assertIn('industry_boom', eval_one(s2)['data_quality']['G']['imputed'])
+
+
+class MarketTemperatureTests(unittest.TestCase):
+    """市场温度：现成标量优先，缺失时从原始序列自算。"""
+
+    def test_derive_exact_values_from_series(self):
+        out, derived = m.derive_market_indicators(dict(
+            turnover_series=[100.0]*245+[300.0]*5,
+            advance_ratio_series=[40.0]*5+[60.0]*20,
+            hs300_close_series=[100.0]*249+[110.0]))
+        self.assertEqual(round(out['volume_ratio_5_250'],6), round(300/104,6))
+        self.assertEqual(out['up_ratio_20d'], 60.0)
+        self.assertEqual(round(out['hs300_ma250_dev'],6), round((110/100.04-1)*100,6))
+        self.assertEqual(set(derived), {'hs300_ma250_dev','volume_ratio_5_250','up_ratio_20d'})
+
+    def test_explicit_scalar_wins_over_series(self):
+        out, derived = m.derive_market_indicators(dict(
+            volume_ratio_5_250=1.0, turnover_series=[100.0]*245+[300.0]*5))
+        self.assertEqual(out['volume_ratio_5_250'], 1.0)
+        self.assertNotIn('volume_ratio_5_250', derived)
+
+    def test_too_short_or_out_of_range_series_is_ignored(self):
+        for mk, key in ((dict(turnover_series=[1.0]*100),'volume_ratio_5_250'),
+                        (dict(turnover_series=[1.0]*249+[0.0]),'volume_ratio_5_250'),
+                        (dict(advance_ratio_series=[101.0]*20),'up_ratio_20d'),
+                        (dict(advance_ratio_series=[50.0]*19),'up_ratio_20d')):
+            out, _ = m.derive_market_indicators(mk)
+            self.assertNotIn(key, out)
+
+    def test_temperature_becomes_available_from_series_alone(self):
+        d = data(); mkt = d['market']
+        for k in ('hs300_ma250_dev','volume_ratio_5_250','up_ratio_20d'):
+            mkt.pop(k); mkt['indicator_meta'].pop(k)
+        self.assertIsNone(m.evaluate(d)['market']['temperature'])      # 原本数据不足
+        mkt['turnover_series'] = [100.0]*245+[300.0]*5
+        mkt['advance_ratio_series'] = [60.0]*20
+        mkt['hs300_close_series'] = [100.0]*249+[110.0]
+        for k in ('turnover_series','advance_ratio_series','hs300_close_series'):
+            mkt['indicator_meta'][k] = meta()
+        market = m.evaluate(d)['market']
+        self.assertIsNotNone(market['temperature'])
+        self.assertEqual(set(market['derived']), {'hs300_ma250_dev','volume_ratio_5_250','up_ratio_20d'})
+        self.assertTrue(any('自算' in n for n in market['notes']))
+
+    def test_derived_indicator_inherits_source_evidence(self):
+        d = data(); mkt = d['market']
+        for k in ('volume_ratio_5_250','up_ratio_20d'):
+            mkt.pop(k); mkt['indicator_meta'].pop(k)
+        mkt['turnover_series'] = [100.0]*245+[300.0]*5
+        mkt['advance_ratio_series'] = [60.0]*20
+        # 序列无 meta：派生值继承不到来源，过不了证据门槛
+        self.assertIsNone(m.evaluate(d)['market']['temperature'])
+        for k in ('turnover_series','advance_ratio_series'):
+            mkt['indicator_meta'][k] = meta()
+        self.assertIsNotNone(m.evaluate(d)['market']['temperature'])
+
+
 if __name__=='__main__':
     unittest.main()

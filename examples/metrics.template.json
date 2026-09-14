@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.2.0",
+  "schema_version": "2.3.0",
   "date": null,
   "market": {},
   "portfolio_policy": {
@@ -28,11 +28,13 @@
       "tradability_meta": {},
       "indicators": {
         "annual_vol": null,
+        "cash_dividend_ttm": null,
         "cet1_buffer_pct": null,
         "comprehensive_solvency_ratio": null,
         "core_solvency_ratio": null,
         "cycle_recovery": null,
         "debt_ratio": null,
+        "dividend_yield_pct": null,
         "drawdown_from_250d_high": null,
         "forecast": null,
         "goodwill_to_netasset": null,
@@ -72,6 +74,8 @@
         "roe_normalized": null,
         "roe_ttm": null,
         "rs_60d": null,
+        "sector_np_yoy_pct": null,
+        "sector_rev_yoy_pct": null,
         "tech_resistance": null,
         "volume_signal": null
       },
