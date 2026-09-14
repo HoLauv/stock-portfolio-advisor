@@ -138,5 +138,6 @@ python -B -m unittest discover -s scripts -p "test_*.py"   # 54 tests
 python scripts/package_skill.py --output dist/stock-portfolio-advisor-2.2.0.zip
 ```
 
-ZIP采用白名单，只含程序、规则说明、当前Logo、默认配置和测试。排除workspace、用户持仓/历史行情、调权档案、旧图、缓存、临时文件以及旧ZIP。每个发行文件的SHA-256在包内MANIFEST.json中。
+ZIP采用白名单，只含程序、规则说明、报告样式、图标提示词、默认配置和测试。排除workspace、用户持仓/历史行情、调权档案、缓存、临时文件以及旧ZIP。每个发行文件的SHA-256在包内MANIFEST.json中。
+`assets/icon.png`不进包——SkillHub服务端会以「不允许的文件类型」拒绝，技能图标走平台托管的`iconUrl`字段；仓库里仍保留该图供GitHub展示。SKILL.md、程序、规则说明、config为必需项，缺失直接打包失败；assets下其余文件缺失只跳过不报错。
 不把“程序测试通过”称为“真实市场回测通过”，不把模拟收益视作未来承诺。

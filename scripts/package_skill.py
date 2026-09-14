@@ -10,11 +10,17 @@ from value_model import VERSION
 def package(output,root=None):
     root=Path(root) if root else Path(__file__).resolve().parent.parent
     output=Path(output)
-    files=[root/'SKILL.md']
-    files+=sorted((root/'scripts').glob('*.py'))
-    files+=sorted((root/'references').glob('*.md'))
-    files += [root/'assets'/name for name in ('icon.png','report.css','icon.prompt.md')]
-    files += [root/'config'/name for name in ('calibration.json','backtest_strategy.json')]
+    required=[root/'SKILL.md']
+    required+=sorted((root/'scripts').glob('*.py'))
+    required+=sorted((root/'references').glob('*.md'))
+    required+= [root/'config'/name for name in ('calibration.json','backtest_strategy.json')]
+    # assets/icon.png 不进包：SkillHub 服务端会拒绝，报「不允许的文件类型: assets/icon.png」。
+    # 技能图标走 SkillHub 托管的 iconUrl 字段，不是随包文件；仓库里仍保留该图供 GitHub 展示。
+    optional=[root/'assets'/name for name in ('report.css','icon.prompt.md')]
+    missing=[p for p in required if not p.is_file()]
+    if missing:
+        raise SystemExit('缺少必需文件，无法打包：'+'、'.join(str(p.relative_to(root)) for p in missing))
+    files=required+[p for p in optional if p.is_file()]
     contents={str(path.relative_to(root)).replace('\\','/'):path.read_bytes() for path in files}
     # Never ship a user's learned weights, audit history or personal portfolio data.
     contents['config/weights.json']=b'{"schema_version": 1, "releases": []}\n'

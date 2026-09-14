@@ -20,6 +20,11 @@
 - 修复：抽出 `allocate_budget()`，每轮基于**同一份权重快照**计算额度、一次性提交增量；分组额度不足时按 merit 比例等比压缩该组额度，且压缩发生在单票上限之前（先截断再压缩会退化成平均分配）。分配结果现在只由评分决定，与代码命名无关。
 - 新增回归测试 `test_allocation_ignores_code_order_within_group`：同名标的换代码顺序后分配结果完全一致，且严格按评分递减。
 
+**打包白名单修正（发布阻塞项）**
+
+- `assets/icon.png` 不再进包：SkillHub 服务端以「不允许的文件类型: assets/icon.png」拒绝整个上传。技能图标本就通过平台托管的 `iconUrl` 字段下发，不属于随包文件（线上已发布的 2.0.0 包内同样没有该文件）。仓库仍保留该图供 GitHub 展示。
+- 白名单改为「必需 + 可选」两段：SKILL.md、`scripts/`、`references/`、`config/` 缺失直接报错并列出文件名；`assets/` 下文件缺失只跳过。此前 `assets/icon.prompt.md` 缺失会抛出裸的 `FileNotFoundError`，难以定位。
+
 ## 2.1.0
 
 **规则与数据质量升级（未完成历史收益校准）**
