@@ -215,6 +215,9 @@ def render_valuation(s):
     missing = ''.join(f'<li>{esc(k)}：{esc(", ".join(d.get("missing", []))) or "无"}</li>' for k, d in s.get('data_quality', {}).items())
     imputed = ''.join(f'<li>{esc(k)}：按总体期望分插补 {esc(", ".join(d.get("imputed", [])))}（第三方来源缺失，非公司表现差）</li>'
                       for k, d in s.get('data_quality', {}).items() if d.get('imputed'))
+    neutral = ''.join(f'<li>{esc(k)}：{esc(", ".join(d.get("neutral", [])))} 缺失，按中性默认分兜底计价'
+                      f'（真实覆盖率 {d.get("coverage", 0):.0f}%，兜底不提高覆盖率）</li>'
+                      for k, d in s.get('data_quality', {}).items() if d.get('neutral'))
     notes = ''.join(f'<li>{esc(n)}</li>' for n in s.get('notes', []))
     div = s.get('dividend')
     dividend = ''
@@ -229,7 +232,7 @@ def render_valuation(s):
             f'<div class="sc-prices">{values}</div>{refs}'
             f'<details><summary>查看情景假设与输入来源</summary><ul>{assumptions}</ul>'
             f'<pre>{inputs}</pre><ul>{sources}</ul></details>'
-            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{imputed}{dividend}{notes}</ul><pre>{audit}</pre></details></div>')
+            f'<details><summary>查看数据缺口与审计记录</summary><ul>{missing}{imputed}{neutral}{dividend}{notes}</ul><pre>{audit}</pre></details></div>')
 
 
 def render_stock_card(s):
@@ -490,6 +493,9 @@ def render(result, css):
 
     mk_comment = mk.get("comment", "")
     mk_notes = mk.get("notes") or []
+    mk_cov = mk.get("coverage")
+    mk_scope = (f'可用 {len(mk.get("used") or [])} 项 · 覆盖率 {mk_cov:.0f}%'
+                if mk_cov is not None else '未提供')
     notes_html = ""
     if mk_notes:
         notes_html = ("<div style='margin-top:9px;font-size:11.5px;color:#6e7681'>"
@@ -544,6 +550,7 @@ def render(result, css):
             <div>权益预算<b>由用户风险政策确定</b></div>
             <div>现金缓冲<b>至少 5%，并满足资金需求</b></div>
             <div>配置基调<b style="font-size:13px">{esc(mk.get('tone'))}</b></div>
+            <div>温度口径<b style="font-size:13px">{esc(mk_scope)}</b></div>
           </div>
           {notes_html}
         </div>

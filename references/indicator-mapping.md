@@ -34,7 +34,7 @@
 - `gross_margin`、`net_margin`、`debt_ratio`：同期间毛利/收入、净利/收入、总负债/总资产×100。
 - `net_profit_ttm`与`operating_cashflow_ttm`：同期实际金额，元；引擎只在同报告期且净利为正时重算现金转化，不接收外部`ocf_to_np`替代。
 - `np_cv_3y`：不少于3个年度净利的标准差/正均值；meta增加`annual_samples`与`positive_mean=true`。亏损/非正均值不套CV。
-- `rev_yoy`、`np_yoy`：同期同比百分数。`prior_net_profit`为对应去年同期利润；≤0时不使用同比增长评分。扣非和归母口径明确标注，不能混用。
+- `rev_yoy`、`np_yoy`：同期同比百分数。`prior_net_profit`为对应去年同期利润；≤0时不使用同比增长评分。扣非和归母口径明确标注，不能混用。**v2.4.0 起 `np_yoy` 可自算**：缺该字段时，若有正 `net_profit_ttm` 与正 `prior_net_profit` 且两者 `period_end` 相差约一年（350–380 天），引擎按 `(net_profit_ttm/prior_net_profit-1)×100` 派生；已有值优先不覆盖。
 - `qoq_trend`：improving/flat/deteriorating，至少3个单季观测判断连续变化，注意季节性。
 - `forecast`：beat/inline/flat/miss，必须有可比预期与实际口径；无预期不得用猜测补充。
 - `cycle_recovery` / `loss_recovery`：improving/flat/deteriorating，分别用于周期和亏损企业；记录量价、利润率、产能和恢复路径的证据。
@@ -93,6 +93,7 @@ DCF公式：`ΣCF_t/(1+r)^t + terminal_cashflow/(r-g)/(1+r)^N`。要求r>0、-10
 `hs300_close_series`（沪深300收盘，≥250）、`turnover_series`（全市场成交额，≥250，近似量能）、`advance_ratio_series`（逐日上涨家数占比%，≥20）。
 另需`risk_free_rate_pct`（10年期国债收益率%，0–20，90日内有效）供股息利差使用。`broken_net_ratio`无法派生，仍需外部提供。
 自算结果记在`market.derived`，`notes`同步写明。
+**出分口径（v2.4.0）**：四项里拿到 ≥3 项（`MIN_MARKET_ITEMS`）即输出温度分，分母改用**可用项权重和**归一；不足 3 项才为"数据不足"。输出附 `coverage`（可用权重占比）、`used`/`missing`（用上/缺失的项）、`min_items`（门槛=3），`notes` 写明"由 N/4 项归一得出"。
 
 `risk={status:checked, events:[], source:..., as_of:...}`表示7日内已核查无风险。未查或失败：status=not_checked/failed，events=null。风险标签ST、*ST、退市预警、立案调查使用标准名称。
 财务降级字段`major_shareholder_reduce_pct`（近30日占总股本比例）、`goodwill_to_netasset`均百分数并附meta。

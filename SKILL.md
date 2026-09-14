@@ -1,10 +1,10 @@
 ---
 name: stock-portfolio-advisor
-description: 分析A股自选与持仓，获取行情、财报、风险与新闻，按行业计算价值评分和独立交易环境分，输出基本面情景估值、数据缺口及受用户风险政策约束的配置参考，并生成离线HTML报告。适用于股票诊断、持仓复盘、投资价值评分和组合配置请求；不自动下单。 English — Deterministic value scoring and allocation for China A-share watchlists and holdings; sector-routed scoring, separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting and constrained allocation reference; renders an offline HTML report. Pure Python stdlib, 72 unit tests. Not investment advice.
+description: 分析A股自选与持仓，获取行情、财报、风险与新闻，按行业计算价值评分和独立交易环境分，输出基本面情景估值、数据缺口及受用户风险政策约束的配置参考，并生成离线HTML报告。适用于股票诊断、持仓复盘、投资价值评分和组合配置请求；不自动下单。 English — Deterministic value scoring and allocation for China A-share watchlists and holdings; sector-routed scoring, separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting and constrained allocation reference; renders an offline HTML report. Pure Python stdlib, 77 unit tests. Not investment advice.
 
 # ===== SkillHub 发布字段（上架必需，顶层）=====
 slug: stock-portfolio-advisor
-version: 2.3.0
+version: 2.4.0
 displayName: 股票投资价值评分
 summary: 上传持仓截图，即可给自选与持仓股票做六维量化评分（0-100），自动输出评级、目标价、止损位、评分变化归因与资产配置建议，并生成可离线打开的 HTML 报告。
 category: 金融分析
@@ -20,7 +20,7 @@ license: MIT
 
 # ===== 本地兼容字段 + ClawHub 分类/标签（保留）=====
 metadata:
-  version: 2.3.0
+  version: 2.4.0
   categories: ["finance"]
   tags:
     - stock
@@ -79,7 +79,7 @@ python scripts/portfolio_ledger.py init --dir workspace/portfolio_ledger
 把标的代码以逗号拼接，独立读取可批量执行，不必逐股拆开。
 
 ```powershell
-npx -y westock-data-skillhub@1.0.5 quote sh600519,sz000725
+npx -y westock-data-skillhub@1.0.5 kline sh600519,sz000725 --period day --limit 1
 npx -y westock-data-skillhub@1.0.5 kline sh600519,sz000725 --period day --limit 250
 npx -y westock-data-skillhub@1.0.5 finance sh600519,sz000725 --num 8
 npx -y westock-data-skillhub@1.0.5 risk sh600519,sz000725
@@ -102,6 +102,7 @@ python scripts/score_engine.py --template --output metrics.json
 
 `risk.status`区分checked/not_checked/failed。已核查无风险用events=[]，未核查用null；ST/退市/立案必须保留标准标签。
 Q/G/V有效覆盖率不足70%、关键财务字段缺失、风险未查或无有效现价/估值，输出NR而不是中性分评级。已知硬风险仍优先D。
+缺失字段处置优先级（v2.4.0）：**先补数据 → 能派生就派生 → 结构性缺失（`forecast`/`industry_boom`）按期望分插补 → 观测项缺失按中性默认分60兜底**；兜底与插补都不抬高覆盖率，NR门槛不受影响，哪些分是插补/兜底来的见 `data_quality.*.imputed`/`.neutral`。大盘温度 4 项里拿到 ≥3 项即出分、按可用项权重归一（不足 3 项才"数据不足"）。
 
 ### 4. 构造适用基本面情景
 

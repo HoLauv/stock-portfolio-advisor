@@ -3,13 +3,22 @@ import math
 from datetime import date
 from weight_registry import read_registry, resolve, DEFAULT_PATH
 
-VERSION = "2.3.0"
+VERSION = "2.4.0"
 MIN_COVERAGE = 70
 # 结构性缺失项的总体期望分插补表。
 # 只收"第三方来源缺失、公司自身并不掌握"的前瞻/行业项：没有机构覆盖就没有一致预期，
 # 没有行业数据就没有景气度，这不代表公司表现差。公司自己披露的财务/资金/技术项一律不在此表，
 # 缺失仍贡献0，避免"漏报坏数据反而加分"。
 IMPUTE = {'forecast': 60, 'industry_boom': 50}
+# 观测项（公司自己应披露的财务/资金/技术等）缺失时的兜底策略。处置顺序永远是「先补、再派生、最后兜底」：
+#   ① 补数据：按 references/data-playbook.md 的取数路径去把缺的字段取回来（首选）；
+#   ② 派生：能从已有原始数据算出来的，引擎自己算（ocf_to_np / np_yoy / dividend_* / industry_boom）；
+#   ③ 结构性缺失（第三方来源，IMPUTE 白名单）：按总体期望分计价；
+#   ④ 观测项缺失（下面的策略）——'neutral' 给中性默认分，'renorm' 从分母剔除后按剩余项归一。
+# 默认 'neutral'：本 skill 的核心用法是「跨快照跟踪评分Δ」，归一会让数据完整度不同的标的
+# 失去可比性（少报两项的分数会虚高），所以默认保留分母、只把缺项按中性分计价。
+MISSING_FILL = 'neutral'
+NEUTRAL_FALLBACK = 60
 # 股息子项曲线与权重。分工刻意不重叠：
 #   V 放"股息率−无风险利率"的利差 —— 衡量现金回报的吸引力，属估值；
 #   Q 放"净利润/现金分红"的覆盖倍数 —— 衡量派息能否持续，属质量。
@@ -21,7 +30,8 @@ DIV_Q_WEIGHT = 10
 # 行业景气度：由申万行业财报TTM同比派生，净利为主(70)、营收为辅(30)
 SECTOR_NP_CURVE = [(-20,0),(0,35),(10,60),(25,85),(50,100)]
 SECTOR_REV_CURVE = [(-10,0),(0,40),(10,70),(25,100)]
-# 市场温度可自算的派生指标：原始序列名 → (派生指标名, 最少样本数, 取值域校验, 计算式)
+# 大盘温度：4 个指标里拿到 ≥3 项即出分，按**可用项的权重和**归一（不再要求 4 项全齐）。
+MIN_MARKET_ITEMS = 3
 FINANCIAL = {"bank", "broker", "insurance"}
 WEIGHTS = {"default": (25,20,20), "growth": (20,30,15), "value": (30,10,30),
            "cyclical": (25,15,25), "bank": (30,10,25), "broker": (30,10,25), "insurance": (30,10,25)}
@@ -36,6 +46,15 @@ def number(x):
 
 def positive(x):
     return number(x) and x > 0
+
+
+def one_year_apart(later, earlier):
+    """两个 period_end 是否相差约一年（350–380 天）。用于同比类派生，防止拿错窗口硬算。"""
+    try:
+        a, b = date.fromisoformat(str(later)[:10]), date.fromisoformat(str(earlier)[:10])
+    except (TypeError, ValueError):
+        return False
+    return 350 <= (a-b).days <= 380
 
 
 def calc_peg(pe, forecast_growth_pct):
@@ -149,35 +168,48 @@ N = [('rating_buy_ratio',25,[(30,0),(50,60),(80,100)]),
 
 
 def score_dimension(m, specs, na=()):
-    """维度分=Σ(单项分×权重)/Σ适用项权重。
+    """维度分=Σ(单项分×权重)/Σ计分权重。
 
-    缺失项分两类处理：
-    - 可观测项缺失（公司披露的财务/资金/技术等）：贡献0，只进missing，不赠送中性分。
-    - IMPUTE白名单内的结构性缺失项（第三方来源缺失）：按总体期望分计价并计入imputed。
-    覆盖率只统计真实数据权重，插补不会抬高覆盖率，NR门槛完全不受影响。
-    期望值口径下的插补只对"结构性缺失"成立，因此不做全局默认，避免漏报观测项反而加分。
+    缺失项分三层处理（顺序即优先级）：
+    1. 能补就补：派生字段（ocf_to_np / np_yoy / dividend_spread_pct / dividend_coverage /
+       industry_boom）已在 checked_metrics 里由原始数据算出，这里拿到的已是补齐后的值；
+    2. 结构性缺失（第三方来源缺失，IMPUTE 白名单）：按总体期望分计价，计入 imputed；
+    3. 观测项缺失（公司应披露的财务/资金/技术等）：按 MISSING_FILL 兜底 ——
+       'neutral' 给中性默认分 NEUTRAL_FALLBACK 并计入 neutral；'renorm' 从计分分母剔除。
+    两个分母是分开的，这点很关键：
+      - `all_weight`（所有适用项权重）只用于算 coverage —— 兜底/插补/归一都**不抬高覆盖率**，
+        MIN_COVERAGE=70 的 NR 门槛完全不受本策略影响；
+      - `used_weight`（实际计入计分的权重）只用于算 score —— neutral 时等于 all_weight，
+        renorm 时等于「真实可用 + 插补」的权重和。
     """
-    earned = available = possible = imputed_weight = 0
-    missing, imputed = [], []
+    earned = available = all_weight = used_weight = imputed_weight = neutral_weight = 0
+    missing, imputed, neutral = [], [], []
     for key, weight, curve in specs:
         if key in na:
             continue
-        possible += weight
+        all_weight += weight
         value = m.get(key)
         sc = curve.get(value) if isinstance(curve,dict) and isinstance(value,str) else interp(value,curve) if isinstance(curve,list) else None
         if sc is not None:
             earned += sc*weight/100
             available += weight
+            used_weight += weight
         elif key in IMPUTE:
             earned += IMPUTE[key]*weight/100
             imputed_weight += weight
+            used_weight += weight
             imputed.append(key)
-        else:
+        elif MISSING_FILL == 'neutral':
+            earned += NEUTRAL_FALLBACK*weight/100
+            neutral_weight += weight
+            used_weight += weight
+            neutral.append(key)
+        else:                                  # renorm：该权重整块退出计分分母
             missing.append(key)
-    coverage = available/possible*100 if possible else 0
-    return dict(score=round(earned/possible*100,1) if coverage >= MIN_COVERAGE else None,
-                coverage=round(coverage,1), imputed_weight=imputed_weight,
-                missing=missing, imputed=imputed, not_applicable=list(na))
+    coverage = available/all_weight*100 if all_weight else 0
+    return dict(score=round(earned/used_weight*100,1) if coverage >= MIN_COVERAGE and used_weight else None,
+                coverage=round(coverage,1), imputed_weight=imputed_weight, neutral_weight=neutral_weight,
+                missing=missing, imputed=imputed, neutral=neutral, not_applicable=list(na))
 
 
 def checked_metrics(stock, as_of, risk_free=None):
@@ -214,6 +246,14 @@ def checked_metrics(stock, as_of, risk_free=None):
     boom = industry_boom_from_sector(clean.get('sector_np_yoy_pct'),clean.get('sector_rev_yoy_pct'))
     if boom is not None:
         clean['industry_boom'] = boom
+    # np_yoy：有净利润TTM与去年同期利润就直接算，不必等调用方手填（与 ocf_to_np 同一套"能补就补"思路）。
+    # 只在缺 np_yoy 时补，调用方已给就尊重其口径；两侧 period_end 需相差约一年，避免拿错窗口硬算。
+    if (not number(clean.get('np_yoy')) and positive(np_) and positive(clean.get('prior_net_profit'))
+            and one_year_apart(meta.get('net_profit_ttm',{}).get('period_end'),
+                               meta.get('prior_net_profit',{}).get('period_end'))):
+        clean['np_yoy'] = round((np_/clean['prior_net_profit']-1)*100,2)
+        notes.append(f"np_yoy 由净利润TTM与去年同期利润派生：({np_}/{clean['prior_net_profit']}-1)×100"
+                     f" = {clean['np_yoy']}%")
     if not positive(clean.get('prior_net_profit')):
         clean.pop('np_yoy',None)
     cv = meta.get('np_cv_3y',{})
@@ -392,12 +432,24 @@ def market_temperature(mk,as_of):
             valid.pop(k)
     if 'volume_ratio_5_250' in valid and valid['volume_ratio_5_250']<0:
         valid.pop('volume_ratio_5_250')
-    temp = round(sum(interp(valid[k],pts)*w for k,w,pts in specs)/85,1) if len(valid)==4 else None
+    # 出分口径：4 项里拿到 ≥MIN_MARKET_ITEMS 项就出分，分母改用**可用项的权重和**（按权重归一）。
+    # 旧口径要求 4 项全齐，缺任意一项就让整个温度分变成"数据不足"——等于让缺数据掩盖已有信息。
+    used = [(k,w,pts) for k,w,pts in specs if k in valid]
+    total_weight = sum(w for _,w,_ in specs)
+    used_weight = sum(w for _,w,_ in used)
+    temp = (round(sum(interp(valid[k],pts)*w for k,w,pts in used)/used_weight,1)
+            if len(used) >= MIN_MARKET_ITEMS else None)
+    coverage = round(used_weight/total_weight*100,1) if total_weight else 0.0
     state = '数据不足' if temp is None else '过热' if temp>=80 else '偏热' if temp>=65 else '中性' if temp>=40 else '偏冷' if temp>=25 else '冰点'
     notes = [f'缺失或过期：{k}' for k,_,_ in specs if k not in valid]
     notes += [f'{k} 由 {src} 自算（未提供现成值）' for k,src in derived.items()]
+    if temp is not None and len(used) < len(specs):
+        notes.append(f'温度分由 {len(used)}/{len(specs)} 项按权重归一得出'
+                     f'（可用权重 {used_weight}/{total_weight}，覆盖率 {coverage}%）')
     return dict(temperature=temp,state=state,equity_range=None,cash_range=None,tone='市场温度不自动决定仓位',
-                comment=mk.get('comment',''),derived=derived,notes=notes)
+                comment=mk.get('comment',''),coverage=coverage,used=[k for k,_,_ in used],
+                missing=[k for k,_,_ in specs if k not in valid],min_items=MIN_MARKET_ITEMS,
+                derived=derived,notes=notes)
 
 
 def allocate(stocks,policy):
@@ -576,6 +628,9 @@ def evaluate(data, registry=None):
                        F=score_dimension(m,F),T=score_dimension(m,T),N=score_dimension(m,N))
         notes = notes + [f'{k}维度：{", ".join(quality[k]["imputed"])} 无有效来源，按总体期望分插补；插补不提高覆盖率'
                          for k in ('Q','G','V','F','T','N') if quality[k]['imputed']]
+        notes = notes + [f'{k}维度：{", ".join(quality[k]["neutral"])} 缺失，按中性默认分{NEUTRAL_FALLBACK}兜底计价'
+                         f'（真实覆盖率{quality[k]["coverage"]}%，兜底不提高覆盖率，仍需先尝试补数据）'
+                         for k in ('Q','G','V','F','T','N') if quality[k]['neutral']]
         if dividend_on:
             notes.append(f"股息子项已启用：利差{m['dividend_spread_pct']}pp（股息率{m['dividend_yield_pct']}%−无风险利率{risk_free}%），"
                          f"盈利覆盖{m['dividend_coverage']}倍；利差计V、覆盖计Q，不重复计分")

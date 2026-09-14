@@ -1,16 +1,16 @@
 # stock-portfolio-advisor · 自选持仓投资价值评分与配置顾问
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org)
-[![Tests](https://img.shields.io/badge/tests-72%20passed-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-77%20passed-brightgreen.svg)](#测试)
 [![Deps](https://img.shields.io/badge/dependencies-stdlib%20only-orange.svg)](#安装)
 
 > 分析 A 股自选与持仓，**按行业路由**计算价值评分与**独立的**交易环境分，输出基本面情景估值、数据缺口、受风险政策约束的配置参考，并生成可离线打开的 HTML 报告。
 >
 > A WorkBuddy Skill. 所有分数由脚本**确定性计算**，禁止模型心算。
 
-**English TL;DR** — Deterministic, rule-based scoring for A-share watchlists and holdings: sector-routed value score + separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting, constrained allocation reference, offline HTML report. Pure Python stdlib, 72 unit tests. Not investment advice.
+**English TL;DR** — Deterministic, rule-based scoring for A-share watchlists and holdings: sector-routed value score + separate trading-environment score, scenario-based fundamental valuation, explicit data-gap reporting, constrained allocation reference, offline HTML report. Pure Python stdlib, 77 unit tests. Not investment advice.
 
 ---
 
@@ -19,12 +19,14 @@
 v1 的问题在于把"交易热度"混进了"价值判断"——资金、技术、新闻的噪音会盖过基本面信号。
 v2 做的一件核心事：**把价值分和交易环境分彻底拆开**，各自独立打分、独立展示，不再合成一个"总分"糊弄过去。
 
-| | v1 | v2.3.0 |
+| | v1 | v2.4.0 |
 |---|---|---|
 | 评分 | 六维合成一个总分 | **价值分（Q/G/V，按行业路由）+ 独立的交易环境分（F/T/N）** |
 | 估值 | 目标价三法取中位数 | 分行业主模型 + bear/base/bull 三情景公允价值 |
-| 缺失数据 | 中性兜底 | **有效覆盖率 <70% 该维度直接为 `null`**，资料不足输出 NR |
-| 结构性缺失 | 计 0 分 | **第三方来源缺失的前瞻/行业项按总体期望分插补**，漏报观测项仍计 0 |
+| 缺失数据 | 中性兜底 | **先补数据 → 能派生就派生 → 最后才兜底**；有效覆盖率 <70% 该维度直接为 `null`，资料不足输出 NR |
+| 结构性缺失 | 计 0 分 | **第三方来源缺失的前瞻/行业项按总体期望分插补**（`IMPUTE` 白名单） |
+| 观测项缺失 | 计 0 分 | **按中性默认分 60 兜底**（`MISSING_FILL='neutral'`），仍留在分母，不会把少量可得数据放大成高分 |
+| 大盘温度 | 4 项全齐才出分 | **拿到 ≥3 项即出分，按可用项权重归一**，缺一两项不再让温度变"数据不足" |
 | 配置 | 固定约束 | 单票 ≤15% / 行业 ≤30% / 产业链分组 ≤30% / 现金 ≥ max(5%, 现金需求) |
 | 可追溯性 | 无 | 每只股票每项指标带 `weights_version`，结果带 `model_version` |
 
@@ -33,7 +35,7 @@ v2 做的一件核心事：**把价值分和交易环境分彻底拆开**，各�
 ## 四条设计原则
 
 1. **不许心算** —— 分数与估值由 `scripts/score_engine.py` 调用 `scripts/value_model.py` 计算，禁止模型凭感觉估分或直接填目标价绕过公式。
-2. **不许编造** —— 取不到的数据标缺失。缺失项**保留在分母里、贡献 0**，不会把"少量可得数据"放大成高分。
+2. **不许编造** —— 取不到的数据标缺失，**绝不编造**。缺失项按固定优先级处置：**先尽力补数据 → 能派生就派生 → 结构性缺失按期望分插补 → 观测项缺失按中性默认分 60 兜底**；兜底/插补**都不抬高覆盖率**，所以不会把"少量可得数据"放大成高分，也过不了 NR 门槛。
 3. **硬风险不被缺失掩盖** —— 已知 ST / 退市 / 立案 → 强制评级 D、仓位上限 0；资料不足 → NR（暂不评级），总分 `null`。
 4. **不承诺收益** —— v2 阈值尚未完成历史收益校准，README 与报告都写明这一点。
 
@@ -81,7 +83,7 @@ python scripts/score_engine.py --template
 
 ### 输入
 
-`examples/metrics.example.json` 是 5 只标的的指标输入：1 只带股息数据的红利样本、1 只数据齐全、1 只无机构覆盖（`forecast` / `industry_boom` 结构性缺失）、1 只银行、1 只故意留空的 `missing`。大盘用的是**原始时间序列**（沪深300 收盘、全市场成交额、涨家占比），温度分由引擎自算。
+`examples/metrics.example.json` 是 6 只标的的指标输入：1 只带股息数据的红利样本、1 只数据齐全、1 只无机构覆盖（`forecast` / `industry_boom` 结构性缺失）、1 只缺个别观测项、1 只银行、1 只故意留空的 `missing`。大盘用的是**原始时间序列**（沪深300 收盘、全市场成交额、涨家占比）外加一个标量，**故意只给 3/4 项**，用来演示 v2.4.0 的"≥3 项即可出分、按权重归一"。
 
 ### 输出 · 个股
 
@@ -90,38 +92,42 @@ python scripts/score_engine.py --template
 | `dividend` | 88.3 | 80.1 | A+ | 价值评分很高 | +33.3% | 15% | —（未持仓） |
 | `ordinary` | 87.0 | 80.1 | A+ | 价值评分很高 | +33.3% | 15% | 11.39% |
 | `no_coverage` | 86.0 | 80.1 | A+ | 价值评分很高 | +33.3% | 15% | 11.12% |
+| `partial_data` | 85.2 | 80.1 | A+ | 价值评分很高 | +33.3% | 15% | —（未持仓） |
 | `bank` | 72.6 | 80.1 | A | 价值评分较高 | −16.7% | 12% | 7.48% |
 | `missing` | `null` | `null` | **NR** | 暂不评级 | — | — | — |
 
 - `missing` 就是"数据不足不硬凑"的演示：**不给分、不定级、不给仓位上限**。
 - `dividend` 演示 v2.3.0 的股息子项：股息率 3.83%、对无风险利率利差 +2.03 个百分点（利差分 93.7），分红覆盖净利 1.89 倍（覆盖分 80.9）→ V = 84.3，比同参数的 `ordinary`（V = 82.0）高。**这是"持有理由"第一次被引擎量化**。
-- `ordinary` 的行业景气度改由申万行业财报派生（净利同比 12.0%、营收同比 8.0%）→ G = 80.3，**不再是所有标的等额 50**。
+- `ordinary` 的行业景气度改由申万行业财报派生（净利同比 12.0%、营收同比 8.0%）→ G = 80.3，**不再是所有标的等额 50**；`np_yoy` 也由净利润 TTM 与去年同期利润自算。
 - `no_coverage` 演示 v2.3.0 的插补与"派生优先"：既无机构覆盖、也无行业财报 → `forecast` 按期望分 60、`industry_boom` 按 50 计价，G = 76.9（旧口径直接计 0 时只有 59.9），覆盖率仍为 70%，**插补不抬高覆盖率**。
+- `partial_data` 演示 **v2.4.0 的中性兜底**：它是 `ordinary` 去掉 `qoq_trend`（G 权重 15、原分 100）后的副本，G 覆盖率跌到 85%、缺项按**中性 60** 计价 → G = 74.3（不再是旧口径的 65.3），价值分 85.2。**兜底值取中位，既不给缺失加分，也不把缺失当"差"来重罚**；覆盖率 85% 仍高于 70% 门槛，所以照常出评级。
 
 ### 输出 · 六维与数据质量
 
 ```json
 // ordinary —— 数据齐全，行业景气度由申万财报派生
 "dims": {"Q": 96.4, "G": 80.3, "V": 82.0, "F": 79.2, "T": 87.4, "N": 74.0},
-// no_coverage —— 结构性缺失走后缀白名单插补
-"dims": {"Q": 96.4, "G": 76.9, "V": 82.0, "F": 79.2, "T": 87.4, "N": 74.0},
-"data_quality": {
-  "Q": {"score": 96.4, "coverage": 100.0, "imputed_weight": 0, "missing": [], "imputed": [], "not_applicable": []},
-  "G": {"score": 76.9, "coverage": 70.0, "imputed_weight": 30, "missing": [], "imputed": ["forecast", "industry_boom"], "not_applicable": []}
-}
+// no_coverage —— 结构性缺失走 IMPUTE 白名单插补
+"G": {"score": 76.9, "coverage": 70.0, "imputed_weight": 30, "neutral_weight": 0,
+      "missing": [], "imputed": ["forecast", "industry_boom"], "neutral": []}
+// partial_data —— 观测项缺失按中性 60 兜底
+"G": {"score": 74.3, "coverage": 85.0, "imputed_weight": 0, "neutral_weight": 15,
+      "missing": [], "imputed": [], "neutral": ["qoq_trend"]}
 ```
 
-每个维度都带 `coverage`（有效覆盖率）、`missing`（真缺失）和 `imputed`（按期望分插补的项）——**分数、它的可信度、以及哪些分是插补来的，一起给**。
+每个维度都带 `coverage`（有效覆盖率）、`imputed`（按期望分插补的项）和 `neutral`（按中性 60 兜底的项）——**分数、它的可信度、以及哪些分是插补/兜底来的，一起给**。`missing` 只在显式切换到 `renorm` 策略时才会非空（默认 `neutral` 下缺项进 `neutral` 而非 `missing`）。
 
 ### 输出 · 大盘与配置
 
 ```json
-"market":     {"temperature": 66.5, "state": "偏热",
+"market":     {"temperature": 70.0, "state": "偏热", "coverage": 82.4, "min_items": 3,
+               "used": ["hs300_ma250_dev", "volume_ratio_5_250", "up_ratio_20d"],
+               "missing": ["broken_net_ratio"],
                "derived": {"volume_ratio_5_250": "turnover_series", "up_ratio_20d": "advance_ratio_series"}}
 "allocation": {"equity_pct": 29.99, "cash_pct": 55.01, "status": "reference"}
 ```
 
-温度分不再是外部给的标量：引擎从 `turnover_series`（量能比 5/250）和 `advance_ratio_series`（20 日上涨占比）**自算**，`derived` 与 `notes` 会点名哪几项是自算的；若外部直接给了标量值，则以外部值为准。
+温度分不再是"4 项全齐才敢给"：本示例只提供了 3 项（`broken_net_ratio` 缺），引擎按**可用项权重占比 82.4% 归一**照常给出 70.0 分，`notes` 写明"温度分由 3/4 项按权重归一得出"。同时 `turnover_series`（量能比 5/250）与 `advance_ratio_series`（20 日上涨占比）是引擎**自算**的，`derived` 会点名；若外部直接给了标量值，则以外部值为准。
 
 配置的 `status` 是 `reference`（参考），不是指令。配套 warning 会明说：
 
@@ -143,11 +149,11 @@ python scripts/score_engine.py --template
 
 **交易环境分** = `(15F + 10T + 10N) / 35` —— 与价值分**并列展示，不混入**。
 
-**缺失值分两类**：公司自己披露的观测项（ROE、负债率、资金流、波动率…）缺失**一律计 0**，漏报坏数据不会反而加分；第三方来源的结构性缺失项（`forecast` 无机构覆盖、`industry_boom` 无行业数据）按**总体期望分**插补（`IMPUTE` 白名单），并记入 `data_quality.*.imputed` 与 `notes`。`coverage` 只算真实数据，插补不抬高覆盖率。
+**缺失值按固定优先级处置**：① **先补数据**（按取数手册把字段取回来）→ ② **能派生就派生**（`ocf_to_np` / `np_yoy` / 股息子项 / 行业景气度 / 温度自算）→ ③ **结构性缺失**（`forecast` 无机构覆盖、`industry_boom` 无行业数据）按**总体期望分**插补（`IMPUTE` 白名单）→ ④ **观测项缺失**（ROE、负债率、资金流、波动率…）按**中性默认分 60** 兜底（`MISSING_FILL='neutral'`），仍留在分母里。三者都不抬高 `coverage`，所以不会把少量可得数据放大成高分，也过不了 NR 门槛；哪些分是插补/兜底来的，`data_quality.*.imputed` 与 `data_quality.*.neutral` 会点名。
 
 **发布门槛**：Q/G/V 均有分 + 关键财务齐全 + 有效现价 + 完整情景估值 + 风险已核查，才发布总分与评级。
 
-**大盘温度**：均线 / 成交额 / 涨跌广度 / 破净比例 4 项，权重 30:20:20:15，缺项不输出温度。
+**大盘温度**：均线 / 成交额 / 涨跌广度 / 破净比例 4 项，权重 30:20:20:15；**拿到 ≥3 项即出分，按可用项权重归一**（不足 3 项才"数据不足"），缺一两项不再让温度消失。
 
 完整口径见 [`references/scoring-model.md`](references/scoring-model.md) 与 [`references/indicator-mapping.md`](references/indicator-mapping.md)。
 
@@ -172,7 +178,7 @@ python scripts/backtest.py --dataset workspace/demo --output bt.json \
   --start 2015-01-01 --end 2024-12-31
 ```
 
-⚠️ **必须说清楚**：仓库里的 72 个单元测试验证的是**公式正确性、缺失值处理、行业路由、风险判定、仓位约束与报告兼容性**，**不是历史收益回测**。
+⚠️ **必须说清楚**：仓库里的 77 个单元测试验证的是**公式正确性、缺失值处理、行业路由、风险判定、仓位约束与报告兼容性**，**不是历史收益回测**。
 v2 的阈值**尚未完成历史收益校准**，因此本项目不宣称"更赚钱"，也不承诺目标价会兑现。
 
 ---
@@ -181,11 +187,11 @@ v2 的阈值**尚未完成历史收益校准**，因此本项目不宣称"更赚
 
 ```bash
 cd scripts
-python test_value_model.py   # 49 tests
+python test_value_model.py   # 54 tests
 python test_backtest.py      # 23 tests
 ```
 
-共 **72 个测试全部通过**，无需联网、无需真实数据。
+共 **77 个测试全部通过**，无需联网、无需真实数据。
 
 ---
 
@@ -206,7 +212,7 @@ python test_backtest.py      # 23 tests
 │   ├── run_calibration.py            # 校准一键执行
 │   ├── make_demo_data.py             # 合成示例数据生成
 │   ├── package_skill.py              # 打包
-│   └── test_*.py                     # 单元测试（72 个）
+│   └── test_*.py                     # 单元测试（77 个）
 ├── references/
 │   ├── scoring-model.md              # 评分结构、行业路由、门槛、约束
 │   ├── indicator-mapping.md          # v2 输入字段、单位、来源日期、估值公式

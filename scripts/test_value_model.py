@@ -160,19 +160,63 @@ class ModelTests(unittest.TestCase):
         self.assertLess(c['data_quality']['G']['coverage'],m.MIN_COVERAGE)
         self.assertIsNone(c['dims']['G']);self.assertEqual(c['grade'],'NR')
 
-    def test_observable_missing_item_is_never_imputed(self):
-        """公司自身披露的观测项缺失仍贡献0，防止漏报坏数据反而加分。"""
+    def test_observable_missing_item_gets_neutral_not_expected_impute(self):
+        """观测项缺失：不走结构性期望分插补，改按中性默认分兜底；
+        且兜底必须高于已知最差表现、且不抬高覆盖率——否则"漏报坏数据反而加分"。"""
         for key in ('net_margin','debt_ratio','main_inflow_20d_pct','annual_vol'):
             self.assertNotIn(key,m.IMPUTE)
-        s=stock();a=first(s);s['indicators'].pop('net_margin');b=first(s)
-        self.assertIn('net_margin',b['data_quality']['Q']['missing'])
-        self.assertFalse(b['data_quality']['Q']['imputed'])
-        self.assertLess(b['dims']['Q'],a['dims']['Q'])
+        full=first(stock())
+        s=stock();s['indicators'].pop('net_margin');b=first(s)
+        q=b['data_quality']['Q']
+        self.assertIn('net_margin',q['neutral'])        # 走中性兜底
+        self.assertNotIn('net_margin',q['imputed'])     # 不是结构性期望分
+        self.assertNotIn('net_margin',q['missing'])     # 也不再被丢弃计0
+        self.assertEqual(q['neutral_weight'],15)
+        self.assertEqual(q['coverage'],85.0)            # 兜底不抬高覆盖率
+        self.assertLess(b['dims']['Q'],full['dims']['Q'])
         s=stock();s['indicators']['debt_ratio']=85;worst=first(s)
         s=stock();s['indicators'].pop('debt_ratio');absent=first(s)
-        self.assertEqual(worst['dims']['Q'],absent['dims']['Q'])
+        self.assertGreater(absent['dims']['Q'],worst['dims']['Q'])   # 缺项 ≠ 最差
         self.assertEqual(absent['data_quality']['Q']['imputed_weight'],0)
-        self.assertLess(absent['dims']['Q'],first(stock())['dims']['Q'])
+        self.assertLess(absent['dims']['Q'],full['dims']['Q'])       # 兜底仍低于真实数据
+
+    def test_neutral_fill_keeps_score_comparable(self):
+        """中性兜底的分母与齐全时一致，所以"分数Δ"在数据完整度变化时仍可比。"""
+        full=first(stock())
+        s=stock();s['indicators'].pop('net_margin');partial=first(s)
+        self.assertEqual(partial['data_quality']['Q']['neutral'],['net_margin'])
+        self.assertTrue(any('中性默认分' in n for n in partial['notes']))
+        self.assertLessEqual(partial['dims']['Q'],full['dims']['Q'])
+
+    def test_renorm_policy_drops_weight_from_denominator(self):
+        """MISSING_FILL='renorm' 时缺项退出计分分母，但覆盖率仍按真实数据算。"""
+        old=m.MISSING_FILL
+        try:
+            m.MISSING_FILL='renorm'
+            s=stock();s['indicators'].pop('net_margin');r=first(s)
+            q=r['data_quality']['Q']
+            self.assertIn('net_margin',q['missing'])
+            self.assertFalse(q['neutral'])
+            self.assertEqual(q['neutral_weight'],0)
+            self.assertEqual(q['coverage'],85.0)        # 覆盖率不受策略影响
+        finally:
+            m.MISSING_FILL=old
+
+    def test_np_yoy_is_derived_from_ttm_and_prior(self):
+        """能补就补：给了净利润TTM与去年同期利润，np_yoy 由引擎自己算。"""
+        s=stock()
+        s['indicators'].pop('np_yoy')
+        s['indicators']['net_profit_ttm']=120
+        s['indicators']['prior_net_profit']=100
+        s['indicator_meta']['net_profit_ttm']['period_end']='2026-06-30'
+        s['indicator_meta']['prior_net_profit']['period_end']='2025-06-30'
+        r=first(s)
+        self.assertTrue(any('np_yoy 由净利润TTM' in n for n in r['notes']))
+        self.assertEqual(r['data_quality']['G']['neutral'].count('np_yoy'),0)
+        # 期间不是"约一年"时不派生，退回兜底
+        s2=stock();s2['indicators'].pop('np_yoy')
+        s2['indicator_meta']['prior_net_profit']['period_end']='2026-06-30'
+        self.assertEqual(first(s2)['data_quality']['G']['neutral'].count('np_yoy'),1)
 
     def test_imputation_is_traced_in_notes_and_report(self):
         css=Path(__file__).resolve().parent.parent.joinpath('assets/report.css').read_text(encoding='utf-8')
@@ -193,7 +237,10 @@ class ModelTests(unittest.TestCase):
 
     def test_history_cannot_use_today_eps(self):
         s=stock();s['indicator_meta']['pe_pct']['basis']='today_eps'
-        self.assertIn('pe_pct',first(s)['data_quality']['V']['missing'])
+        v=first(s)['data_quality']['V']
+        self.assertIn('pe_pct',v['neutral'])      # 口径不合规被剔除，不进真实计分
+        self.assertFalse(v['imputed'])
+        self.assertLess(v['coverage'],100.0)
 
     def test_peg_units_and_invalid_growth(self):
         self.assertEqual(m.calc_peg(20,20),1)
@@ -536,6 +583,32 @@ class MarketTemperatureTests(unittest.TestCase):
         for k in ('turnover_series','advance_ratio_series'):
             mkt['indicator_meta'][k] = meta()
         self.assertIsNotNone(m.evaluate(d)['market']['temperature'])
+
+    def test_three_items_are_enough_and_weights_renormalize(self):
+        """4 项里拿到 3 项就出分，分母改用可用项权重和（旧口径缺 1 项直接不显示温度）。"""
+        d = data(); mkt = d['market']
+        mkt['up_ratio_20d'] = 60                      # 该点插值=85，使归一化可见
+        mkt.pop('broken_net_ratio'); mkt['indicator_meta'].pop('broken_net_ratio')
+        market = m.evaluate(d)['market']
+        self.assertIsNotNone(market['temperature'])
+        self.assertEqual(set(market['used']),
+                         {'hs300_ma250_dev','volume_ratio_5_250','up_ratio_20d'})
+        self.assertEqual(market['missing'], ['broken_net_ratio'])
+        self.assertEqual(market['coverage'], 82.4)    # (30+20+20)/85
+        # (50*30 + 50*20 + 85*20)/70 = 60.0；若误用 85 做分母会得到 49.4
+        self.assertEqual(market['temperature'], 60.0)
+        self.assertTrue(any('按权重归一' in n for n in market['notes']))
+
+    def test_fewer_than_three_items_stays_unavailable(self):
+        """不足 3 项仍判数据不足，不硬凑温度分。"""
+        d = data(); mkt = d['market']
+        for k in ('up_ratio_20d','broken_net_ratio'):
+            mkt.pop(k); mkt['indicator_meta'].pop(k)
+        market = m.evaluate(d)['market']
+        self.assertIsNone(market['temperature'])
+        self.assertEqual(market['state'], '数据不足')
+        self.assertEqual(market['coverage'], 58.8)    # (30+20)/85
+        self.assertIn(m.MIN_MARKET_ITEMS, (market['min_items'],))
 
 
 if __name__=='__main__':
